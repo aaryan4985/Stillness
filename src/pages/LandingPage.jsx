@@ -248,15 +248,7 @@ const LandingPage = () => {
             </div>
           </div>
           
-          {/* Enhanced scroll indicator */}
-          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="relative">
-              <div className="w-6 h-12 border border-white/20 rounded-full flex justify-center backdrop-blur-sm">
-                <div className="w-0.5 h-4 bg-white/40 rounded-full mt-2 animate-pulse"></div>
-              </div>
-              <div className="absolute -inset-4 border border-white/10 rounded-full animate-ping"></div>
-            </div>
-          </div>
+          
         </div>
 
         {/* Enhanced video wrapper with proper layering */}
