@@ -241,7 +241,7 @@ const LandingPage = () => {
             >
               <SplitText
                 text="The  Anti-Social  Social  Network."
-                className="text-lg md:text-xl text-white/80 font-extralight tracking-[0.2em] max-w-3xl mx-auto leading-relaxed"
+                className="text-lg md:text-xl text-white font-extralight tracking-[0.2em] max-w-3xl mx-auto leading-relaxed"
                 splitType="words"
                 delay={100}
               />
