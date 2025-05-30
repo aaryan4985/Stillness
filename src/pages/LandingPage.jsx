@@ -211,22 +211,7 @@ const LandingPage = () => {
               background: `radial-gradient(circle at ${50 + mousePosition.x * 0.1}% ${50 + mousePosition.y * 0.1}%, rgba(255,255,255,0.1) 0%, transparent 50%)`
             }}
           ></div>
-          
-          {/* Floating particles */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
-                style={{
-                  left: `${15 + i * 15}%`,
-                  top: `${20 + i * 10}%`,
-                  animationDelay: `${i * 0.8}s`,
-                  animationDuration: `${3 + i * 0.5}s`
-                }}
-              ></div>
-            ))}
-          </div>
+         
           
           <div className="relative z-10 space-y-12 max-w-5xl mx-auto px-6">
             <div 
@@ -255,7 +240,7 @@ const LandingPage = () => {
               style={{ transform: `translateX(${-mousePosition.x * 0.01}px) translateY(${-mousePosition.y * 0.01}px)` }}
             >
               <SplitText
-                text="The Anti-Social Social Network."
+                text="The  Anti-Social  Social  Network."
                 className="text-lg md:text-xl text-white/80 font-extralight tracking-[0.2em] max-w-3xl mx-auto leading-relaxed"
                 splitType="words"
                 delay={100}
