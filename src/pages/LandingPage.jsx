@@ -55,7 +55,7 @@ const createMockGSAP = () => {
             isScrolling = true;
             requestAnimationFrame(() => {
               scrollY = window.scrollY;
-              const progress = Math.min(scrollY / (window.innerHeight * 1.5), 1);
+              const progress = Math.min(scrollY / window.innerHeight, 1);
               
               if (target && target.style) {
                 if (props.scale !== undefined) {
@@ -93,7 +93,7 @@ const ScrollTrigger = {
   create: (config) => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      const threshold = window.innerHeight * 2;
+      const threshold = window.innerHeight * 1.5;
       
       if (scrollY > threshold && config.onEnter) {
         config.onEnter();
@@ -155,21 +155,25 @@ const LandingPage = () => {
 
   return (
     <div ref={containerRef} className="relative bg-white text-white w-full overflow-x-hidden">
-    {/* Navbar */}
-    {showNavbar && (
-        <nav className="fixed
-          <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 className="text-xl font-bold tracking-wide">STILLNESS</h1>
-            <div className="space-x-4">
-              <button className="text-sm px-4 py-1 rounded bg-white text-black font-semibold">Sign In</button>
-              <button className="text-sm px-4 py-1 rounded border border-white">Sign Up</button>
-            </div>
+      {/* Navbar */}
+      <div className={`fixed top-0 left-0 w-full px-6 md:px-8 py-4 bg-black/90 backdrop-blur-lg z-50 transition-all duration-700 ease-out border-b border-white/10 ${
+        showNavbar ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+      }`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-xl md:text-2xl font-bold tracking-wider text-white">STILLNESS</h1>
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <button className="text-sm md:text-base px-5 py-2 rounded-full bg-white text-black font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg">
+              Sign In
+            </button>
+            <button className="text-sm md:text-base px-5 py-2 rounded-full border-2 border-white text-white hover:bg-white hover:text-black transition-all duration-200">
+              Sign Up
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Hero Section with Pinned Scroll */}
-      <section ref={pinnedSectionRef} className="relative min-h-[200vh] z-10">
+      <section ref={pinnedSectionRef} className="relative min-h-[150vh] z-10">
         <div className="sticky top-0 h-screen flex flex-col items-center justify-center text-center z-20">
           <SplitText
             text="Stillness."
