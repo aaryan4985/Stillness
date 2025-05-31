@@ -1,15 +1,13 @@
-import React from "react";
-import TopBar from "../components/TopBar";
-import PostBox from "../components/PostBox";
-import Feed from "../components/Feed";
+// src/pages/Home.jsx
+import Sidebar from "../components/Sidebar";
+import MainFeedArea from "../components/MainFeedArea";
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-[#fefefe] text-gray-800 transition-colors duration-300">
-      <TopBar />
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        <PostBox />
-        <Feed />
+    <div className="flex min-h-screen bg-black text-white">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto p-6">
+        <MainFeedArea />
       </main>
     </div>
   );
