@@ -1,41 +1,178 @@
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth } from "../firebase/config";
-import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState("");
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate("/feed");
+      // await createUserWithEmailAndPassword(auth, email, password);
+      // navigate("/feed");
+      setTimeout(() => setIsLoading(false), 1000); // Demo
     } catch (err) {
+      setIsLoading(false);
       alert(err.message);
     }
   };
 
   const googleSignup = async () => {
+    setIsLoading(true);
     try {
-      await signInWithPopup(auth);
-      navigate("/feed");
+      // await signInWithPopup(auth);
+      // navigate("/feed");
+      setTimeout(() => setIsLoading(false), 1000); // Demo
     } catch (err) {
+      setIsLoading(false);
       alert(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <h2 className="text-3xl font-semibold mb-4">Create your Stillness account</h2>
-      <form onSubmit={handleSignup} className="flex flex-col w-full max-w-sm gap-4">
-        <input type="email" placeholder="Email" className="p-3 border" onChange={(e) => setEmail(e.target.value)} />
-        <input type="password" placeholder="Password" className="p-3 border" onChange={(e) => setPassword(e.target.value)} />
-        <button type="submit" className="bg-black text-white py-2">Sign Up</button>
-        <button type="button" onClick={googleSignup} className="bg-gray-200 py-2">Sign Up with Google</button>
-      </form>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/20 via-black to-gray-900/20"></div>
+      <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-white/3 rounded-full blur-2xl"></div>
+      
+      <div className="relative z-10 w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
+            STILLNESS
+          </h1>
+          <div className="w-16 h-px bg-white/30 mx-auto"></div>
+          <h2 className="text-xl font-extralight tracking-wide text-white/80">
+            Begin your journey
+          </h2>
+          <p className="text-sm text-white/50 font-light leading-relaxed max-w-xs mx-auto">
+            Create an account to join our anti-social social network
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {/* Email Input */}
+            <div className="relative group">
+              <input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocusedField("email")}
+                onBlur={() => setFocusedField("")}
+                className={`w-full px-4 py-4 bg-white/5 border rounded-lg text-white placeholder-white/40 
+                  font-light tracking-wide transition-all duration-300 focus:outline-none backdrop-blur-sm
+                  ${focusedField === "email" 
+                    ? "border-white/40 bg-white/10 shadow-lg" 
+                    : "border-white/20 hover:border-white/30"
+                  }`}
+              />
+              <div className={`absolute inset-0 rounded-lg transition-all duration-300 pointer-events-none
+                ${focusedField === "email" ? "bg-white/5 scale-105" : "scale-100"}`}></div>
+            </div>
+
+            {/* Password Input */}
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setFocusedField("password")}
+                onBlur={() => setFocusedField("")}
+                className={`w-full px-4 py-4 bg-white/5 border rounded-lg text-white placeholder-white/40 
+                  font-light tracking-wide transition-all duration-300 focus:outline-none backdrop-blur-sm
+                  ${focusedField === "password" 
+                    ? "border-white/40 bg-white/10 shadow-lg" 
+                    : "border-white/20 hover:border-white/30"
+                  }`}
+              />
+              <div className={`absolute inset-0 rounded-lg transition-all duration-300 pointer-events-none
+                ${focusedField === "password" ? "bg-white/5 scale-105" : "scale-100"}`}></div>
+            </div>
+          </div>
+
+          {/* Terms */}
+          <div className="text-center">
+            <p className="text-xs text-white/40 font-light leading-relaxed">
+              By creating an account, you agree to embrace{" "}
+              <span className="text-white/60 underline decoration-white/20">stillness</span>{" "}
+              and{" "}
+              <span className="text-white/60 underline decoration-white/20">mindful sharing</span>
+            </p>
+          </div>
+
+          {/* Sign Up Button */}
+          <button
+            onClick={handleSignup}
+            disabled={isLoading}
+            className="group relative w-full py-4 bg-white text-black font-light tracking-[0.2em] 
+              rounded-lg hover:bg-white/90 transition-all duration-300 overflow-hidden
+              disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className={`transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}>
+              CREATE ACCOUNT
+            </span>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+              </div>
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative bg-black px-4 text-sm text-white/60 font-light">
+              or
+            </div>
+          </div>
+
+          {/* Google Sign Up */}
+          <button
+            onClick={googleSignup}
+            disabled={isLoading}
+            className="group relative w-full py-4 bg-white/5 border border-white/20 text-white 
+              font-light tracking-[0.2em] rounded-lg hover:bg-white/10 hover:border-white/30 
+              transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className={`transition-opacity duration-300 ${isLoading ? "opacity-0" : "opacity-100"}`}>
+              CONTINUE WITH GOOGLE
+            </span>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+              </div>
+            )}
+          </button>
+        </div>
+
+            <div className="text-center pt-8 space-y-4">
+              <p className="text-white/60 font-light text-sm tracking-wide">
+                Already have an account?{" "}
+                <button
+                  className="text-white/80 hover:text-white transition-colors duration-300 decoration-white/20 hover:decoration-white/60"
+                  onClick={() => window.location.href = "/signin"}
+                >
+                  Sign in
+                </button>
+              </p>
+              
+              {/* Philosophy note */}
+          <div className="pt-6 border-t border-white/10">
+            <p className="text-xs text-white/30 font-extralight italic leading-relaxed">
+              "In stillness, we find our truest thoughts"
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
