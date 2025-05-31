@@ -23,7 +23,7 @@ const SplitText = ({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || el.dataset.animated === "true") return;
 
     const absoluteLines = splitType === "lines";
     if (absoluteLines) el.style.position = "relative";
@@ -53,7 +53,7 @@ const SplitText = ({
       t.style.willChange = "transform, opacity";
     });
 
-    const startPct = (1 - threshold) * 100; // e.g. 0.1 -> 90%
+    const startPct = (1 - threshold) * 100;
     const m = /^(-?\d+)px$/.exec(rootMargin);
     const raw = m ? parseInt(m[1], 10) : 0;
     const sign = raw < 0 ? `-=${Math.abs(raw)}px` : `+=${raw}px`;
@@ -67,7 +67,10 @@ const SplitText = ({
         once: true,
       },
       smoothChildTiming: true,
-      onComplete: onLetterAnimationComplete,
+      onComplete: () => {
+        el.dataset.animated = "true"; // ✅ Mark this element as animated
+        onLetterAnimationComplete?.();
+      },
     });
 
     tl.set(targets, { ...from, immediateRender: false, force3D: true });
@@ -99,18 +102,13 @@ const SplitText = ({
   ]);
 
   return (
-  <p
-    ref={ref}
-    className={`split-parent overflow-hidden w-full whitespace-normal ${className}`}
-    style={{
-      textAlign,
-      wordWrap: "break-word",
-    }}
-  >
-    {text}
-  </p>
-);
-
+    <p
+      ref={ref}
+      className={`split-parent overflow-hidden w-full whitespace-normal ${className}`}
+      style={{ textAlign, wordWrap: "break-word" }}
+      dangerouslySetInnerHTML={{ __html: text }}
+    />
+  );
 };
 
 export default SplitText;
