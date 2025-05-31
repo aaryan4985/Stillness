@@ -1,8 +1,10 @@
 // src/pages/Signup.jsx
 
 import { useState } from "react";
-import SplitText from "../components/SplitText"; 
-
+import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "../firebase/config"; // adjust the path to your firebase config
+import SplitText from "../components/SplitText";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -10,28 +12,33 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // await createUserWithEmailAndPassword(auth, email, password);
-      // navigate("/feed");
-      setTimeout(() => setIsLoading(false), 1000); // Demo
+      await createUserWithEmailAndPassword(auth, email, password);
+      navigate("/usersetup");
     } catch (err) {
-      setIsLoading(false);
+      console.error("Signup error:", err);
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const googleSignup = async () => {
     setIsLoading(true);
     try {
-      // await signInWithPopup(auth);
-      // navigate("/feed");
-      setTimeout(() => setIsLoading(false), 1000); // Demo
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      navigate("/usersetup");
     } catch (err) {
-      setIsLoading(false);
+      console.error("Google signup error:", err);
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,16 +59,14 @@ const Signup = () => {
       <div className="relative z-10 w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-            <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
-                <SplitText text="STILLNESS" splitType="chars" className="inline-block" delay={50} />
-
-            </h1>
-            <div className="w-16 h-px bg-white/30 mx-auto"></div>
-            <h2 className="text-xl font-extralight tracking-wide text-white/80">
-                <SplitText text="Begin your journey" splitType="words" className="inline-block" delay={70} />
-
-            </h2>
-            <p className="text-sm text-white/50 font-light leading-relaxed max-w-xs mx-auto">
+          <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
+            <SplitText text="STILLNESS" splitType="chars" className="inline-block" delay={50} />
+          </h1>
+          <div className="w-16 h-px bg-white/30 mx-auto"></div>
+          <h2 className="text-xl font-extralight tracking-wide text-white/80">
+            <SplitText text="Begin your journey" splitType="words" className="inline-block" delay={70} />
+          </h2>
+          <p className="text-sm text-white/50 font-light leading-relaxed max-w-xs mx-auto">
             Create an account to join our anti-social social network
           </p>
         </div>

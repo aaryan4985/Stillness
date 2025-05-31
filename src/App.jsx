@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import Signup from "./pages/Signup";
 import Signin from "./pages/Signin";
 import Home from "./pages/Home";
+import UserSetup from "./pages/UserSetup";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signin" element={<Signin />} />
       <Route path="/home" element={<Home />} />
+      <Route path="/usersetup" element={<UserSetup />} />
     </Routes>
   );
 }

@@ -1,5 +1,8 @@
 // src/pages/UserSetup.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { db, auth } from "../firebase/config";
+import { doc, setDoc } from "firebase/firestore";
 
 const PFP_OPTIONS = [
   "/assets/1 (1).jpg",
@@ -11,12 +14,10 @@ const PFP_OPTIONS = [
 ];
 
 const MOOD_OPTIONS = [
-  "Calm",
-  "Reflective",
-  "Melancholy",
-  "Hopeful",
-  "Anxious",
-  "Content",
+  "Calm", "Reflective", "Melancholy", "Hopeful", "Anxious", "Content",
+  "Lonely", "Nostalgic", "Peaceful", "Burnt Out", "Overwhelmed",
+  "Motivated", "Detached", "Grateful", "In Love", "Heartbroken",
+  "Inspired", "Zen",
 ];
 
 const UserSetup = () => {
@@ -26,6 +27,13 @@ const UserSetup = () => {
   const [bio, setBio] = useState("");
   const [anonymousPosts, setAnonymousPosts] = useState(true);
   const [privatePosts, setPrivatePosts] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!auth.currentUser) navigate("/signin");
+  }, []);
 
   const toggleMood = (mood) => {
     setMoods((prev) =>
@@ -33,22 +41,39 @@ const UserSetup = () => {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username.trim()) {
+    if (submitting) return;
+
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
       alert("Username is required.");
       return;
     }
-    // Here you would typically save to Firestore or your backend
-    console.log({
-      username,
+
+    setSubmitting(true);
+
+    const userData = {
+      username: trimmedUsername,
       selectedPfp,
       moods,
-      bio,
+      bio: bio.trim(),
       anonymousPosts,
       privatePosts,
-    });
-    alert("Setup complete! (Saving logic to be added)");
+    };
+
+    try {
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      await setDoc(userRef, userData);
+      alert("Setup complete!");
+      navigate("/home");
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      alert("Failed to save setup.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -86,7 +111,7 @@ const UserSetup = () => {
                 onClick={() => setSelectedPfp(pfp)}
                 className={`w-16 h-16 rounded-full border-2 transition-all duration-300 ${
                   selectedPfp === pfp
-                    ? "border-yellow-400 shadow-lg"
+                    ? "border-yellow-400 ring-2 ring-yellow-400 shadow-md"
                     : "border-white/20 hover:border-yellow-400"
                 }`}
               >
@@ -101,7 +126,7 @@ const UserSetup = () => {
           </div>
         </div>
 
-        {/* Moods */}
+        {/* Mood Tags */}
         <div>
           <p className="mb-2 font-light text-sm">Select your mood(s)</p>
           <div className="flex flex-wrap gap-3">
@@ -126,7 +151,7 @@ const UserSetup = () => {
         {/* Bio */}
         <div>
           <label htmlFor="bio" className="block mb-2 text-sm font-light">
-            Bio (optional)
+            Bio <span className="text-white/40">(optional)</span>
           </label>
           <textarea
             id="bio"
@@ -138,7 +163,7 @@ const UserSetup = () => {
           />
         </div>
 
-        {/* Privacy Settings */}
+        {/* Privacy Toggles */}
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
             <input
@@ -166,12 +191,17 @@ const UserSetup = () => {
           </div>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <button
           type="submit"
-          className="w-full py-3 bg-yellow-400 text-black font-light tracking-wide rounded-lg hover:bg-yellow-500 transition-colors duration-300"
+          disabled={submitting}
+          className={`w-full py-3 rounded-lg font-light tracking-wide transition-colors duration-300 ${
+            submitting
+              ? "bg-yellow-200 text-black cursor-not-allowed"
+              : "bg-yellow-400 text-black hover:bg-yellow-500"
+          }`}
         >
-          Complete Setup
+          {submitting ? "Saving..." : "Complete Setup"}
         </button>
       </form>
     </div>
