@@ -2,6 +2,8 @@ import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
+import SplitText from "../components/SplitText"; // adjust path as needed
+
 
 const Signin = () => {
   const [email, setEmail] = useState("");
@@ -45,9 +47,15 @@ const Signin = () => {
       <div className="relative z-10 w-full max-w-md space-y-8 flex flex-col items-center justify-center mx-auto">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">STILLNESS</h1>
-          <div className="w-16 h-px bg-white/30 mx-auto"></div>
-          <h2 className="text-xl font-extralight tracking-wide text-white/80">Welcome back</h2>
+            <SplitText
+                text="STILLNESS"
+                className="text-2xl font-light tracking-[0.3em] text-white/90"
+            />
+            <div className="w-16 h-px bg-white/30 mx-auto"></div>
+            <SplitText
+                text="Welcome back"
+                className="text-xl font-extralight tracking-wide text-white/80"
+            />
         </div>
 
         {/* Form */}
