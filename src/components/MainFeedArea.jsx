@@ -1,11 +1,12 @@
 // src/components/MainFeedArea.jsx
-const MainFeedArea = () => {
+import PostInput from "./PostInput";
+
+const MainFeedArea = ({ selectedMood = "Calm" }) => {
   return (
     <div className="ml-64 max-w-2xl mx-auto">
       {/* Posting area */}
       <div className="mb-6">
-        <h2 className="text-xl font-light mb-2">Post your thoughts</h2>
-        {/* PostInput component will go here */}
+        <PostInput selectedMood={selectedMood} />
       </div>
 
       {/* Feed area */}
