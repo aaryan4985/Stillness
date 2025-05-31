@@ -331,7 +331,8 @@ const LandingPage = () => {
             {/* CTA Button */}
             <div className="pt-16">
               <button className="group relative px-12 py-4 text-lg font-light tracking-[0.2em] text-white border border-white/30 rounded-full hover:border-white transition-all duration-700 overflow-hidden">
-                <span className="relative z-10 group-hover:text-black transition-colors duration-500">
+                <span className="relative z-10 group-hover:text-black transition-colors duration-500"
+                onClick={() => window.location.href = "/signup"}>
                   BEGIN YOUR STILLNESS
                 </span>
                 <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
