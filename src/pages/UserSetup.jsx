@@ -131,7 +131,7 @@ const UserSetup = () => {
                 Choose your avatar
             </p>
             <div className="flex justify-center">
-                <div className="flex space-x-4 overflow-x-auto pb-2">
+                <div className="flex space-x-4 overflow-x-auto p-4">
                     {PFP_OPTIONS.map((pfp, index) => (
                         <div
                             key={pfp}
@@ -143,20 +143,21 @@ const UserSetup = () => {
                             <button
                                 type="button"
                                 onClick={() => setSelectedPfp(pfp)}
-                                className={`w-32 h-32 rounded-full border-3 transition-all duration-300 transform hover:scale-105 overflow-hidden ${
+                                className={`w-20 h-20 rounded-full border-3 transition-all duration-300 transform hover:scale-105 overflow-hidden ${
                                     selectedPfp === pfp
                                         ? "border-white shadow-lg shadow-white/20"
                                         : "border-white/20 hover:border-white/40"
                                 }`}
                             >
-                                {/* Make the image fill the circle more by reducing padding and using object-cover */}
+                                
                                 <img
                                     src={pfp}
                                     alt="Profile option"
-                                    className="w-full h-full object-cover scale-150" // Increased scale for bigger image inside the circle
+                                    className="w-full h-full object-cover scale-[1.9]" 
                                     draggable={false}
-                                    style={{ objectPosition: "center" }} // Ensure image is centered
+                                    style={{ objectPosition: "center" }} 
                                 />
+                                
                             </button>
                             {selectedPfp === pfp && (
                                 <div className="absolute inset-0 rounded-full border-2 border-white/40 animate-pulse"></div>
