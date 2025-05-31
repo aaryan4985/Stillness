@@ -17,7 +17,7 @@ const Signin = () => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/feed"); // or your homepage/dashboard
+      navigate("/home"); // or your homepage/dashboard
     } catch (err) {
       alert(err.message);
     } finally {
@@ -29,7 +29,7 @@ const Signin = () => {
     setIsLoading(true);
     try {
       await signInWithPopup(auth, provider);
-      navigate("/feed");
+      navigate("/home");
     } catch (err) {
       alert(err.message);
     } finally {
