@@ -189,11 +189,13 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl md:text-2xl font-light tracking-[0.3em] text-white">STILLNESS</h1>
           <div className="flex items-center space-x-4">
-            <button className="group relative text-sm md:text-base px-6 py-2.5 rounded-full bg-white/5 text-white font-light hover:bg-white hover:text-black transition-all duration-500 border border-white/20 backdrop-blur-sm overflow-hidden">
+            <button className="group relative text-sm md:text-base px-6 py-2.5 rounded-full bg-white/5 text-white font-light hover:bg-white hover:text-black transition-all duration-500 border border-white/20 backdrop-blur-sm overflow-hidden"
+            onClick={() => window.location.href = "/signin"}>
               <span className="relative z-10">Sign In</span>
               <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             </button>
-            <button className="group relative text-sm md:text-base px-6 py-2.5 rounded-full border border-white/30 text-white hover:border-white transition-all duration-500 overflow-hidden">
+            <button className="group relative text-sm md:text-base px-6 py-2.5 rounded-full border border-white/30 text-white hover:border-white transition-all duration-500 overflow-hidden"
+            onClick={() => window.location.href = "/signup"}>
               <span className="relative z-10 group-hover:text-black transition-colors duration-500">Sign Up</span>
               <div className="absolute inset-0 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
             </button>

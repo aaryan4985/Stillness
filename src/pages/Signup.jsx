@@ -1,3 +1,5 @@
+// src/pages/Signup.jsx
+
 import { useState } from "react";
 
 const Signup = () => {
@@ -31,30 +33,33 @@ const Signup = () => {
     }
   };
 
+  const renderBlurOverlay = (active) => (
+    <div
+      className={`absolute inset-0 rounded-lg pointer-events-none transition-transform duration-300 
+        ${active ? "bg-white/5 scale-105" : "scale-100"}`}
+    />
+  );
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
-      {/* Background elements */}
+      {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-900/20 via-black to-gray-900/20"></div>
       <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-white/3 rounded-full blur-2xl"></div>
-      
+
       <div className="relative z-10 w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
-            STILLNESS
-          </h1>
+          <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">STILLNESS</h1>
           <div className="w-16 h-px bg-white/30 mx-auto"></div>
-          <h2 className="text-xl font-extralight tracking-wide text-white/80">
-            Begin your journey
-          </h2>
+          <h2 className="text-xl font-extralight tracking-wide text-white/80">Begin your journey</h2>
           <p className="text-sm text-white/50 font-light leading-relaxed max-w-xs mx-auto">
             Create an account to join our anti-social social network
           </p>
         </div>
 
         {/* Form */}
-        <div className="space-y-6">
+        <form onSubmit={handleSignup} className="space-y-6">
           <div className="space-y-4">
             {/* Email Input */}
             <div className="relative group">
@@ -65,15 +70,17 @@ const Signup = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setFocusedField("email")}
                 onBlur={() => setFocusedField("")}
+                autoComplete="email"
+                aria-label="Email"
                 className={`w-full px-4 py-4 bg-white/5 border rounded-lg text-white placeholder-white/40 
                   font-light tracking-wide transition-all duration-300 focus:outline-none backdrop-blur-sm
-                  ${focusedField === "email" 
-                    ? "border-white/40 bg-white/10 shadow-lg" 
-                    : "border-white/20 hover:border-white/30"
+                  ${
+                    focusedField === "email"
+                      ? "border-white/40 bg-white/10 shadow-lg"
+                      : "border-white/20 hover:border-white/30"
                   }`}
               />
-              <div className={`absolute inset-0 rounded-lg transition-all duration-300 pointer-events-none
-                ${focusedField === "email" ? "bg-white/5 scale-105" : "scale-100"}`}></div>
+              {renderBlurOverlay(focusedField === "email")}
             </div>
 
             {/* Password Input */}
@@ -85,31 +92,30 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 onFocus={() => setFocusedField("password")}
                 onBlur={() => setFocusedField("")}
+                autoComplete="new-password"
+                aria-label="Password"
                 className={`w-full px-4 py-4 bg-white/5 border rounded-lg text-white placeholder-white/40 
                   font-light tracking-wide transition-all duration-300 focus:outline-none backdrop-blur-sm
-                  ${focusedField === "password" 
-                    ? "border-white/40 bg-white/10 shadow-lg" 
-                    : "border-white/20 hover:border-white/30"
+                  ${
+                    focusedField === "password"
+                      ? "border-white/40 bg-white/10 shadow-lg"
+                      : "border-white/20 hover:border-white/30"
                   }`}
               />
-              <div className={`absolute inset-0 rounded-lg transition-all duration-300 pointer-events-none
-                ${focusedField === "password" ? "bg-white/5 scale-105" : "scale-100"}`}></div>
+              {renderBlurOverlay(focusedField === "password")}
             </div>
           </div>
 
           {/* Terms */}
-          <div className="text-center">
-            <p className="text-xs text-white/40 font-light leading-relaxed">
-              By creating an account, you agree to embrace{" "}
-              <span className="text-white/60 underline decoration-white/20">stillness</span>{" "}
-              and{" "}
-              <span className="text-white/60 underline decoration-white/20">mindful sharing</span>
-            </p>
-          </div>
+          <p className="text-xs text-white/40 text-center font-light leading-relaxed">
+            By creating an account, you agree to embrace{" "}
+            <span className="text-white/60 underline decoration-white/20">stillness</span> and{" "}
+            <span className="text-white/60 underline decoration-white/20">mindful sharing</span>
+          </p>
 
           {/* Sign Up Button */}
           <button
-            onClick={handleSignup}
+            type="submit"
             disabled={isLoading}
             className="group relative w-full py-4 bg-white text-black font-light tracking-[0.2em] 
               rounded-lg hover:bg-white/90 transition-all duration-300 overflow-hidden
@@ -130,13 +136,12 @@ const Signup = () => {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20"></div>
             </div>
-            <div className="relative bg-black px-4 text-sm text-white/60 font-light">
-              or
-            </div>
+            <span className="relative bg-black px-4 text-sm text-white/60 font-light">or</span>
           </div>
 
           {/* Google Sign Up */}
           <button
+            type="button"
             onClick={googleSignup}
             disabled={isLoading}
             className="group relative w-full py-4 bg-white/5 border border-white/20 text-white 
@@ -152,20 +157,20 @@ const Signup = () => {
               </div>
             )}
           </button>
-        </div>
+        </form>
 
-            <div className="text-center pt-8 space-y-4">
-              <p className="text-white/60 font-light text-sm tracking-wide">
-                Already have an account?{" "}
-                <button
-                  className="text-white/80 hover:text-white transition-colors duration-300 decoration-white/20 hover:decoration-white/60"
-                  onClick={() => window.location.href = "/signin"}
-                >
-                  Sign in
-                </button>
-              </p>
-              
-              {/* Philosophy note */}
+        {/* Footer */}
+        <div className="text-center pt-8 space-y-4">
+          <p className="text-white/60 font-light text-sm tracking-wide">
+            Already have an account?{" "}
+            <button
+              onClick={() => (window.location.href = "/signin")}
+              className="text-white/80 hover:text-white transition-colors duration-300 underline-offset-2 decoration-white/20 hover:decoration-white/60"
+            >
+              Sign in
+            </button>
+          </p>
+
           <div className="pt-6 border-t border-white/10">
             <p className="text-xs text-white/30 font-extralight italic leading-relaxed">
               "In stillness, we find our truest thoughts"
