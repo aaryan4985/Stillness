@@ -2,13 +2,11 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase/config";
 import { doc, getDoc } from "firebase/firestore";
-import { SIDEBAR_MOODS } from "../constants";
 import { useNavigate } from "react-router-dom";
 
-const Sidebar = ({ onMoodSelect }) => {
+const Sidebar = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedMood, setSelectedMood] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,18 +33,12 @@ const Sidebar = ({ onMoodSelect }) => {
 
   const handleLogout = async () => {
     await auth.signOut();
-    navigate("/signin");
-  };
-
-  const handleMoodClick = (mood) => {
-    setSelectedMood(mood);
-    onMoodSelect?.(mood); // Optional callback to reload feed
+    navigate("/");
   };
 
   if (loading) {
     return (
       <aside className="fixed left-0 top-0 h-full w-72 bg-black backdrop-blur-sm border-r border-white/20 flex flex-col items-center justify-center px-6 text-white overflow-hidden">
-        {/* Background floating orbs */}
         <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/3 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl"></div>
         
@@ -61,7 +53,6 @@ const Sidebar = ({ onMoodSelect }) => {
   if (!userData) {
     return (
       <aside className="fixed left-0 top-0 h-full w-72 bg-black backdrop-blur-sm border-r border-white/20 flex flex-col items-center justify-center px-6 text-white overflow-hidden">
-        {/* Background floating orbs */}
         <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/3 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl"></div>
         
@@ -77,14 +68,12 @@ const Sidebar = ({ onMoodSelect }) => {
 
   return (
     <aside className="fixed left-0 top-0 h-full w-72 bg-black backdrop-blur-sm border-r border-white/20 flex flex-col items-center py-8 px-6 text-white select-none overflow-hidden">
-      {/* Background floating orbs */}
       <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/3 rounded-full blur-3xl"></div>
       <div className="absolute top-1/3 -right-20 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
       <div className="absolute -bottom-20 left-1/2 w-60 h-60 bg-white/3 rounded-full blur-3xl"></div>
-      
-      {/* Content Container */}
+
       <div className="relative z-10 flex flex-col items-center h-full w-full space-y-6">
-        
+
         {/* Brand Title */}
         <div className="text-center mb-2">
           <h1 className="text-xl font-extralight tracking-[0.3em] text-white/80">
@@ -95,7 +84,6 @@ const Sidebar = ({ onMoodSelect }) => {
 
         {/* Profile Section */}
         <div className="flex flex-col items-center space-y-4">
-          {/* Profile Picture with Glow */}
           <div className="relative group">
             <div className="absolute inset-0 bg-white/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-all duration-500 scale-110"></div>
             <img
@@ -106,38 +94,28 @@ const Sidebar = ({ onMoodSelect }) => {
             />
           </div>
 
-          {/* Username */}
           <h2 className="text-xl font-light tracking-wide text-center text-white/90 truncate max-w-full">
             {userData.username || "Unnamed"}
           </h2>
         </div>
 
-        {/* Mood Filter Section */}
+        {/* Display Selected Moods */}
         <section className="w-full flex-1 flex flex-col">
           <div className="text-center mb-4">
             <h3 className="text-xs font-extralight tracking-[0.2em] uppercase text-white/60 mb-2">
-              Mood Filter
+              Your Moods
             </h3>
             <div className="w-12 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto"></div>
           </div>
-          
+
           <div className="flex flex-wrap justify-center gap-2 px-2">
-            {SIDEBAR_MOODS.map(({ label, value }, index) => (
-              <button
-                key={value}
-                onClick={() => handleMoodClick(value)}
-                className={`px-4 py-2 rounded-full text-xs font-light border transition-all duration-300 transform hover:scale-105
-                  ${
-                    selectedMood === value
-                      ? "bg-white text-black border-white shadow-lg shadow-white/20"
-                      : "border-white/30 text-white/80 hover:border-white/50 hover:bg-white/5 hover:text-white/90"
-                  }`}
-                style={{
-                  transitionDelay: `${index * 50}ms`
-                }}
+            {(userData.moods || []).map((mood, index) => (
+              <span
+                key={index}
+                className="px-4 py-2 rounded-full text-xs font-light border border-white/30 text-white/80 bg-white/5 backdrop-blur-md"
               >
-                {label}
-              </button>
+                {mood}
+              </span>
             ))}
           </div>
         </section>
