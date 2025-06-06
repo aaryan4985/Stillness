@@ -7,6 +7,7 @@ import {
   where,
   orderBy,
   onSnapshot,
+  Timestamp,
 } from "firebase/firestore";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -16,14 +17,9 @@ const PostFeed = ({ selectedMood }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If no mood is selected, don't run the query
-    if (!selectedMood) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
+    if (!selectedMood) return;
 
-    const now = new Date();
+    const now = Timestamp.now();
     const postsRef = collection(db, "posts");
 
     const q = query(
@@ -44,7 +40,7 @@ const PostFeed = ({ selectedMood }) => {
         setLoading(false);
       },
       (error) => {
-        console.error("Error fetching posts:", error.message);
+        console.error("Error fetching posts:", error);
         setLoading(false);
       }
     );
@@ -55,7 +51,7 @@ const PostFeed = ({ selectedMood }) => {
   if (!selectedMood) {
     return (
       <div className="text-center py-10 text-white/60">
-        Select a mood to see relevant posts.
+        Please select a mood from the sidebar.
       </div>
     );
   }
@@ -64,7 +60,7 @@ const PostFeed = ({ selectedMood }) => {
     return (
       <div className="text-center py-10 text-white/70">
         <Loader2 className="animate-spin inline mr-2" />
-        Loading your mood feed...
+        Loading posts...
       </div>
     );
   }
@@ -78,7 +74,7 @@ const PostFeed = ({ selectedMood }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-6">
       {posts.map((post) => (
         <div
           key={post.id}
@@ -98,8 +94,8 @@ const PostFeed = ({ selectedMood }) => {
           {post.imageUrl && (
             <img
               src={post.imageUrl}
-              alt="User upload"
-              className="rounded-lg max-h-96 object-cover"
+              alt="Uploaded"
+              className="rounded-lg max-h-96 object-cover border border-white/10"
             />
           )}
         </div>

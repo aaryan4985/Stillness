@@ -17,39 +17,27 @@ const PostInput = ({ selectedMood }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
-    }
+    setImage(e.target.files[0]);
   };
 
   const handlePost = async () => {
-    if (!text && !image) {
-      alert("Please enter some text or add an image.");
-      return;
-    }
-
-    if (!selectedMood) {
-      alert("Please select a mood before posting.");
-      return;
-    }
+    if (!text && !image) return;
+    if (!selectedMood) return alert("Please select a mood.");
 
     setUploading(true);
-
     try {
       let imageUrl = null;
 
-      // Upload image if selected
       if (image) {
         const imageRef = ref(storage, `posts/${uuidv4()}-${image.name}`);
-        const snapshot = await uploadBytes(imageRef, image);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        await uploadBytes(imageRef, image);
+        imageUrl = await getDownloadURL(imageRef);
       }
 
       const user = auth.currentUser;
-      const userId = anonymous || !user ? "anonymous" : user.uid;
 
       const post = {
-        userId,
+        userId: anonymous || !user ? "anonymous" : user.uid,
         content: text,
         imageUrl,
         mood: selectedMood,
@@ -65,25 +53,23 @@ const PostInput = ({ selectedMood }) => {
       setText("");
       setImage(null);
       setAnonymous(false);
-    } catch (err) {
-      console.error("Error posting:", err);
-      alert("Something went wrong while posting. Check console for details.");
+    } catch (error) {
+      console.error("Error posting:", error);
     }
-
     setUploading(false);
   };
 
   return (
-    <div className="bg-white/5 p-4 rounded-lg border border-white/10 shadow">
+    <div className="bg-white/5 p-4 rounded-lg border border-white/10 shadow text-white">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
         placeholder="Share your thoughts..."
-        className="w-full bg-transparent text-white p-2 rounded outline-none border border-white/10 focus:ring-2 focus:ring-yellow-400"
+        className="w-full bg-transparent p-2 rounded outline-none border border-white/10 focus:ring-2 focus:ring-yellow-400"
       />
 
-      <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
+      <div className="flex justify-between items-center mt-3 flex-wrap gap-3">
         <input
           type="file"
           accept="image/*"
@@ -91,7 +77,7 @@ const PostInput = ({ selectedMood }) => {
           className="text-sm text-white/80"
         />
 
-        <label className="flex items-center text-sm space-x-2">
+        <label className="flex items-center text-sm gap-2">
           <input
             type="checkbox"
             checked={anonymous}
@@ -103,7 +89,7 @@ const PostInput = ({ selectedMood }) => {
         <button
           onClick={handlePost}
           disabled={uploading}
-          className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition disabled:opacity-50"
+          className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition"
         >
           {uploading ? "Posting..." : "Post"}
         </button>
