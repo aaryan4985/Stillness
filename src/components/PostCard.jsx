@@ -1,29 +1,62 @@
 // src/components/PostCard.jsx
-import React from "react";
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase/config";
+import { doc, getDoc } from "firebase/firestore";
 
-const moodColors = {
-  Calm: "bg-[#c3e4f2]",
-  Grateful: "bg-[#fceeb5]",
-  Anxious: "bg-[#f8c1c1]",
-  Happy: "bg-[#c9f5d9]",
-  Lonely: "bg-[#d8c8f0]",
-};
+const PostCard = ({ post }) => {
+  const [author, setAuthor] = useState(null);
 
-const PostCard = ({ text, mood, expiresAt }) => {
-  const timeLeft = Math.max((expiresAt - Date.now()) / 1000 / 60 / 60, 0).toFixed(1); // hours left
+  useEffect(() => {
+    const fetchAuthor = async () => {
+      if (!post.isAnonymous && post.userId) {
+        const userDoc = await getDoc(doc(db, "users", post.userId));
+        if (userDoc.exists()) {
+          setAuthor(userDoc.data());
+        }
+      }
+    };
+    fetchAuthor();
+  }, [post.userId, post.isAnonymous]);
+
+  const isCurrentUser = auth.currentUser?.uid === post.userId;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`p-4 rounded-xl shadow-md ${moodColors[mood] || "bg-white"}`}
-    >
-      <p className="text-sm mb-2">{text}</p>
-      <div className="text-xs text-gray-600 flex justify-between">
-        <span>{mood}</span>
-        <span>⏳ {timeLeft}h left</span>
+    <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 text-white">
+      <div className="flex items-center justify-between mb-2 text-sm text-white/60">
+        <span>{post.mood}</span>
+        <span>
+          {new Date(post.createdAt?.toDate()).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
-    </motion.div>
+
+      {!post.isAnonymous && author && (
+        <div className="flex items-center gap-3 mb-3">
+          <img
+            src={author.photoURL}
+            alt="user"
+            className="w-8 h-8 rounded-full object-cover"
+          />
+          <span className="text-white text-sm font-medium">{author.displayName}</span>
+        </div>
+      )}
+
+      <p className="text-white mb-3 whitespace-pre-wrap">{post.content}</p>
+
+      {post.imageUrl && (
+        <img
+          src={post.imageUrl}
+          alt="Post"
+          className="rounded-lg max-h-[300px] w-full object-cover mt-2"
+        />
+      )}
+
+      {post.isPrivate && isCurrentUser && (
+        <p className="text-xs text-pink-400 mt-3">Private post (only you can see)</p>
+      )}
+    </div>
   );
 };
 
