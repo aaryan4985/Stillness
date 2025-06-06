@@ -17,41 +17,59 @@ const PostInput = ({ selectedMood }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleImageChange = (e) => {
-    setImage(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
+    }
   };
 
   const handlePost = async () => {
-    if (!text && !image) return;
+    if (!text && !image) {
+      alert("Please enter some text or add an image.");
+      return;
+    }
+
+    if (!selectedMood) {
+      alert("Please select a mood before posting.");
+      return;
+    }
 
     setUploading(true);
 
-    let imageUrl = null;
+    try {
+      let imageUrl = null;
 
-    if (image) {
-      const imageRef = ref(storage, `posts/${uuidv4()}-${image.name}`);
-      await uploadBytes(imageRef, image);
-      imageUrl = await getDownloadURL(imageRef);
+      // Upload image if selected
+      if (image) {
+        const imageRef = ref(storage, `posts/${uuidv4()}-${image.name}`);
+        const snapshot = await uploadBytes(imageRef, image);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+
+      const user = auth.currentUser;
+      const userId = anonymous || !user ? "anonymous" : user.uid;
+
+      const post = {
+        userId,
+        content: text,
+        imageUrl,
+        mood: selectedMood,
+        createdAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(
+          new Date(Date.now() + 24 * 60 * 60 * 1000)
+        ),
+      };
+
+      await addDoc(collection(db, "posts"), post);
+
+      // Reset form
+      setText("");
+      setImage(null);
+      setAnonymous(false);
+    } catch (err) {
+      console.error("Error posting:", err);
+      alert("Something went wrong while posting. Check console for details.");
     }
 
-    const user = auth.currentUser;
-
-    const post = {
-      userId: anonymous ? "anonymous" : user.uid,
-      content: text,
-      imageUrl,
-      mood: selectedMood,
-      createdAt: serverTimestamp(),
-      expiresAt: Timestamp.fromDate(
-        new Date(Date.now() + 24 * 60 * 60 * 1000)
-      ),
-    };
-
-    await addDoc(collection(db, "posts"), post);
-
-    // Reset form
-    setText("");
-    setImage(null);
-    setAnonymous(false);
     setUploading(false);
   };
 
@@ -65,7 +83,7 @@ const PostInput = ({ selectedMood }) => {
         className="w-full bg-transparent text-white p-2 rounded outline-none border border-white/10 focus:ring-2 focus:ring-yellow-400"
       />
 
-      <div className="flex justify-between items-center mt-3 gap-2">
+      <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
         <input
           type="file"
           accept="image/*"
@@ -85,7 +103,7 @@ const PostInput = ({ selectedMood }) => {
         <button
           onClick={handlePost}
           disabled={uploading}
-          className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition"
+          className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition disabled:opacity-50"
         >
           {uploading ? "Posting..." : "Post"}
         </button>
