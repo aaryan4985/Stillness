@@ -20,10 +20,17 @@ const PostFeed = ({ selectedMood }) => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const allPosts = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const now = Date.now();
+const allPosts = snapshot.docs.map((doc) => ({
+  id: doc.id,
+  ...doc.data(),
+})).filter(post => {
+  const createdAt = post.createdAt?.toDate?.() ?? null;
+  if (!createdAt) return false;
+  const ageInMs = now - createdAt.getTime();
+  return ageInMs < 24 * 60 * 60 * 1000; // Keep posts less than 24h old
+});
+
 
         // Filter posts based on privacy settings
         const visiblePosts = allPosts.filter(post => {

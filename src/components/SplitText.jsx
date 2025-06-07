@@ -1,3 +1,5 @@
+// src/components/SplitText.jsx
+
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -20,10 +22,11 @@ const SplitText = ({
   onLetterAnimationComplete,
 }) => {
   const ref = useRef(null);
+  const animatedRef = useRef(false); // ⚠️ animation state tracker
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || el.dataset.animated === "true") return;
+    if (!el || animatedRef.current) return;
 
     const absoluteLines = splitType === "lines";
     if (absoluteLines) el.style.position = "relative";
@@ -68,7 +71,7 @@ const SplitText = ({
       },
       smoothChildTiming: true,
       onComplete: () => {
-        el.dataset.animated = "true"; // ✅ Mark this element as animated
+        animatedRef.current = true; // ✅ Mark animation as done
         onLetterAnimationComplete?.();
       },
     });
@@ -89,7 +92,6 @@ const SplitText = ({
       splitter.revert();
     };
   }, [
-    text,
     delay,
     duration,
     ease,

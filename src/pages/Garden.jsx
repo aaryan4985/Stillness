@@ -1,73 +1,57 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 // Mood to flower mapping
 const moodFlowers = {
-  calm: { color: "from-blue-300 to-blue-500", symbol: "🌸", glow: "shadow-blue-400/30" },
-  melancholy: { color: "from-purple-400 to-purple-700", symbol: "🥀", glow: "shadow-purple-400/30" },
-  reflective: { color: "from-teal-300 to-teal-600", symbol: "🌺", glow: "shadow-teal-400/30" },
-  hopeful: { color: "from-yellow-300 to-orange-400", symbol: "🌻", glow: "shadow-yellow-400/40" },
-  anxious: { color: "from-orange-300 to-red-400", symbol: "🌼", glow: "shadow-orange-400/30" },
-  content: { color: "from-emerald-300 to-emerald-500", symbol: "🌷", glow: "shadow-emerald-400/30" },
-  nostalgic: { color: "from-amber-300 to-yellow-500", symbol: "🌙", glow: "shadow-amber-400/30" },
-  lonely: { color: "from-indigo-400 to-purple-600", symbol: "🌹", glow: "shadow-indigo-400/30" },
-  peaceful: { color: "from-cyan-300 to-blue-400", symbol: "🏵️", glow: "shadow-cyan-400/30" },
-  heartbroken: { color: "from-red-400 to-rose-600", symbol: "💔", glow: "shadow-red-400/30" },
-  zen: { color: "from-gray-300 to-slate-500", symbol: "🕉️", glow: "shadow-gray-400/20" },
-  "burnt out": { color: "from-gray-400 to-gray-700", symbol: "🌫️", glow: "shadow-gray-500/20" },
-  overwhelmed: { color: "from-red-300 to-pink-500", symbol: "🌀", glow: "shadow-pink-400/30" },
-  motivated: { color: "from-green-400 to-lime-500", symbol: "⚡", glow: "shadow-green-400/40" },
-  detached: { color: "from-slate-300 to-gray-500", symbol: "🌫️", glow: "shadow-slate-400/20" },
-  grateful: { color: "from-pink-300 to-rose-400", symbol: "🙏", glow: "shadow-pink-400/30" },
-  "in love": { color: "from-pink-400 to-red-400", symbol: "💕", glow: "shadow-pink-400/40" },
-  inspired: { color: "from-violet-300 to-purple-500", symbol: "✨", glow: "shadow-violet-400/40" }
+  calm: { color: "#93c5fd", symbol: "🌸", type: "flower1" },
+  melancholy: { color: "#a78bfa", symbol: "🥀", type: "flower2" },
+  reflective: { color: "#5eead4", symbol: "🌺", type: "flower3" },
+  hopeful: { color: "#fcd34d", symbol: "🌻", type: "sunflower" },
+  anxious: { color: "#fdba74", symbol: "🌼", type: "flower4" },
+  content: { color: "#6ee7b7", symbol: "🌷", type: "tulip" },
+  nostalgic: { color: "#fbbf24", symbol: "🌙", type: "flower5" },
+  lonely: { color: "#818cf8", symbol: "🌹", type: "rose" },
+  peaceful: { color: "#67e8f9", symbol: "🏵️", type: "flower6" },
+  heartbroken: { color: "#f87171", symbol: "💔", type: "flower7" },
+  zen: { color: "#d1d5db", symbol: "🕉️", type: "flower8" },
+  "burnt out": { color: "#9ca3af", symbol: "🌫️", type: "flower9" },
+  overwhelmed: { color: "#fca5a5", symbol: "🌀", type: "flower10" },
+  motivated: { color: "#86efac", symbol: "⚡", type: "flower11" },
+  detached: { color: "#cbd5e1", symbol: "🌫️", type: "flower12" },
+  grateful: { color: "#f9a8d4", symbol: "🙏", type: "flower13" },
+  "in love": { color: "#f472b6", symbol: "💕", type: "flower14" },
+  inspired: { color: "#c4b5fd", symbol: "✨", type: "flower15" }
 };
 
 // Generate non-overlapping positions in a grid-like garden layout
 const generateGardenPositions = (postCount) => {
   const positions = [];
-  const minDistance = 140; // Increased minimum distance
-  const maxAttempts = 50;
+  
+  // Calculate rows and columns based on count
+  const cols = Math.ceil(Math.sqrt(postCount));
+  const rows = Math.ceil(postCount / cols);
   
   for (let i = 0; i < postCount; i++) {
-    let position;
-    let attempts = 0;
-    let validPosition = false;
+    const row = Math.floor(i / cols);
+    const col = i % cols;
     
-    while (!validPosition && attempts < maxAttempts) {
-      // Create more organized positioning with some randomness
-      const row = Math.floor(i / 4); // 4 flowers per row roughly
-      const col = i % 4;
-      
-      position = {
-        x: (col * 180) - 270 + (Math.random() - 0.5) * 60, // More spread out
-        y: (row * 120) - 150 + (Math.random() - 0.5) * 40
-      };
-      
-      // Check if position is valid (no overlaps)
-      validPosition = positions.every(pos => {
-        const distance = Math.sqrt(
-          Math.pow(pos.x - position.x, 2) + Math.pow(pos.y - position.y, 2)
-        );
-        return distance >= minDistance;
-      });
-      
-      attempts++;
-    }
-    
-    positions.push(position || { x: i * 100 - 200, y: 0 }); // Fallback position
+    positions.push({
+      x: (col * 180) - ((cols - 1) * 90) + (Math.random() - 0.5) * 40,
+      y: (row * 140) - ((rows - 1) * 70) + (Math.random() - 0.5) * 30
+    });
   }
   
   return positions;
 };
 
-// Flower component
+// Flower component with SVG-based flowers
 const Flower = ({ post, position, index, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
   const flower = moodFlowers[post.mood?.toLowerCase()] || moodFlowers.calm;
   
-  // Handle Firebase timestamp format
   const getCreatedDate = () => {
     if (post.createdAt?.toDate) {
       return post.createdAt.toDate();
@@ -85,6 +69,91 @@ const Flower = ({ post, position, index, onClick }) => {
     return () => clearTimeout(timer);
   }, [index]);
   
+  // Different flower types with SVG
+  const renderFlower = () => {
+    const baseSize = 60;
+    const stemHeight = 80;
+    const stemWidth = 4;
+    const flowerSize = baseSize * (isHovered ? 1.1 : 1);
+    
+    switch(flower.type) {
+      case 'sunflower':
+        return (
+          <>
+            <path 
+              d={`M ${stemWidth/2} 0 v ${stemHeight}`} 
+              stroke="#4d7c0f" 
+              strokeWidth={stemWidth} 
+              fill="none"
+            />
+            <circle cx="0" cy={-stemHeight} r={flowerSize*0.4} fill="#713f12" />
+            <circle cx="0" cy={-stemHeight} r={flowerSize*0.3} fill="#facc15" />
+            {[...Array(12)].map((_, i) => (
+              <path
+                key={i}
+                d={`M 0 ${-stemHeight} L ${Math.sin(i * 30 * Math.PI/180) * flowerSize*0.6} ${-stemHeight + Math.cos(i * 30 * Math.PI/180) * flowerSize*0.6} Z`}
+                fill="#f59e0b"
+              />
+            ))}
+          </>
+        );
+      case 'tulip':
+        return (
+          <>
+            <path 
+              d={`M ${stemWidth/2} 0 v ${stemHeight}`} 
+              stroke="#4d7c0f" 
+              strokeWidth={stemWidth} 
+              fill="none"
+            />
+            <path
+              d={`M 0 ${-stemHeight} 
+                Q -${flowerSize*0.4} ${-stemHeight-flowerSize*0.6} 0 ${-stemHeight-flowerSize}
+                Q ${flowerSize*0.4} ${-stemHeight-flowerSize*0.6} 0 ${-stemHeight} Z`}
+              fill={flower.color}
+            />
+          </>
+        );
+      case 'rose':
+        return (
+          <>
+            <path 
+              d={`M ${stemWidth/2} 0 v ${stemHeight}`} 
+              stroke="#4d7c0f" 
+              strokeWidth={stemWidth} 
+              fill="none"
+            />
+            <path
+              d={`M 0 ${-stemHeight} 
+                C -${flowerSize*0.3} ${-stemHeight-flowerSize*0.2} -${flowerSize*0.5} ${-stemHeight-flowerSize*0.4} 0 ${-stemHeight-flowerSize*0.6}
+                C ${flowerSize*0.5} ${-stemHeight-flowerSize*0.4} ${flowerSize*0.3} ${-stemHeight-flowerSize*0.2} 0 ${-stemHeight} Z`}
+              fill={flower.color}
+            />
+          </>
+        );
+      default:
+        return (
+          <>
+            <path 
+              d={`M ${stemWidth/2} 0 v ${stemHeight}`} 
+              stroke="#4d7c0f" 
+              strokeWidth={stemWidth} 
+              fill="none"
+            />
+            <circle cx="0" cy={-stemHeight} r={flowerSize*0.5} fill={flower.color} />
+            {[...Array(6)].map((_, i) => (
+              <path
+                key={i}
+                d={`M 0 ${-stemHeight} L ${Math.sin(i * 60 * Math.PI/180) * flowerSize*0.8} ${-stemHeight + Math.cos(i * 60 * Math.PI/180) * flowerSize*0.8} Z`}
+                fill={flower.color}
+                opacity="0.8"
+              />
+            ))}
+          </>
+        );
+    }
+  };
+  
   return (
     <div
       className={`absolute transition-all duration-700 ease-out cursor-pointer ${
@@ -100,39 +169,14 @@ const Flower = ({ post, position, index, onClick }) => {
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onClick(post)}
     >
-      {/* Flower stem */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-        <div className="w-2 h-16 bg-green-500 rounded-full shadow-sm" />
-        {/* Small leaves */}
-        <div className="absolute top-1/2 -left-2 text-xs">🍃</div>
-        <div className="absolute top-3/4 -right-2 text-xs">🍃</div>
-      </div>
-      
-      {/* Flower petals */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className={`absolute w-3 h-6 bg-gradient-to-t ${flower.color} rounded-full opacity-70`}
-            style={{
-              transform: `rotate(${60 * i}deg) translateY(-20px)`,
-              transformOrigin: 'center bottom',
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Flower center */}
-      <div
-        className={`relative w-16 h-16 bg-gradient-to-br ${flower.color} rounded-full ${flower.glow} shadow-xl flex items-center justify-center transition-all duration-300 border-2 border-white/30`}
-        style={{
-          boxShadow: isHovered 
-            ? `0 0 25px ${flower.glow.split('/')[0].replace('shadow-', '').replace('-', ', ')}/60, 0 8px 20px rgba(0,0,0,0.3)`
-            : `0 0 15px ${flower.glow.split('/')[0].replace('shadow-', '').replace('-', ', ')}/40, 0 4px 12px rgba(0,0,0,0.2)`
-        }}
+      <svg 
+        width="120" 
+        height="180" 
+        viewBox="0 0 120 180"
+        className="drop-shadow-lg"
       >
-        <span className="text-2xl">{flower.symbol}</span>
-      </div>
+        {renderFlower()}
+      </svg>
       
       {/* Tooltip */}
       {isHovered && (
@@ -170,7 +214,10 @@ const FlowerModal = ({ post, onClose }) => {
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
         <div className="text-center mb-6">
-          <div className={`w-20 h-20 bg-gradient-to-br ${flower.color} rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl border-2 border-white/20`}>
+          <div 
+            className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl border-2 border-white/20`}
+            style={{ backgroundColor: flower.color }}
+          >
             {flower.symbol}
           </div>
           <h3 className="text-xl font-bold text-white capitalize mb-2">{post.mood}</h3>
@@ -204,51 +251,14 @@ const FlowerModal = ({ post, onClose }) => {
 };
 
 const Garden = ({ userPosts = [] }) => {
+  const navigate = useNavigate();
   const [selectedPost, setSelectedPost] = useState(null);
   const [flowerPositions, setFlowerPositions] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Demo data for testing - remove this when connecting to real Firebase
-  const demoData = [
-    { 
-      id: '1', 
-      mood: 'Anxious', 
-      content: 'Feeling worried about the presentation tomorrow.', 
-      createdAt: { seconds: Date.now() / 1000 - 86400 },
-      userId: 'demo-user'
-    },
-    { 
-      id: '2', 
-      mood: 'Hopeful', 
-      content: 'Started a new chapter in my life today.', 
-      createdAt: { seconds: Date.now() / 1000 - 172800 },
-      userId: 'demo-user'
-    },
-    { 
-      id: '3', 
-      mood: 'Calm', 
-      content: 'Evening meditation brought me peace.', 
-      createdAt: { seconds: Date.now() / 1000 - 259200 },
-      userId: 'demo-user'
-    },
-    { 
-      id: '4', 
-      mood: 'Grateful', 
-      content: 'Thankful for family time this weekend.', 
-      createdAt: { seconds: Date.now() / 1000 - 345600 },
-      userId: 'demo-user'
-    },
-    { 
-      id: '5', 
-      mood: 'Reflective', 
-      content: 'Thinking about how much I have grown this year.', 
-      createdAt: { seconds: Date.now() / 1000 - 432000 },
-      userId: 'demo-user'
-    }
-  ];
-
   // Use demo data if no user posts provided
-  const posts = userPosts.length > 0 ? userPosts : demoData;
+
+  const posts = useMemo(() => (userPosts.length > 0 ? userPosts : []), [userPosts]);
 
   useEffect(() => {
     if (posts.length > 0) {
@@ -259,38 +269,59 @@ const Garden = ({ userPosts = [] }) => {
   }, [posts]);
 
   return (
-    <div className="h-screen bg-gradient-to-br from-sky-100 via-green-50 to-emerald-100 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-blue-200/40 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-32 w-24 h-24 bg-green-200/40 rounded-full blur-2xl" />
-        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-yellow-200/30 rounded-full blur-3xl" />
+    <div className="h-screen bg-gradient-to-b from-blue-50 to-green-50 relative overflow-hidden">
+      {/* Sky background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-200 to-blue-100 z-0">
+        {/* Clouds */}
+        <div className="absolute top-20 left-20 w-40 h-20 bg-white rounded-full opacity-30"></div>
+        <div className="absolute top-40 right-40 w-60 h-30 bg-white rounded-full opacity-30"></div>
+        <div className="absolute top-80 left-1/4 w-50 h-25 bg-white rounded-full opacity-30"></div>
       </div>
       
+      {/* Garden ground */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-200 to-green-300 z-10">
+        {/* Grass details */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-green-400/20"></div>
+        {/* Small decorative elements */}
+        <div className="absolute bottom-20 left-1/4 w-8 h-8 bg-brown-500 rounded-full"></div>
+        <div className="absolute bottom-24 right-1/3 w-6 h-6 bg-brown-400 rounded-full"></div>
+      </div>
+      
+      {/* Home button */}
+      <button
+        onClick={() => navigate('/home')}
+        className="absolute top-4 left-4 z-30 bg-white/80 hover:bg-white text-gray-800 px-4 py-2 rounded-lg shadow-md border border-gray-200 flex items-center gap-2 transition-all"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+        </svg>
+        Back Home
+      </button>
+
       {/* Header */}
-      <div className="relative z-10 text-center pt-8 pb-4">
+      <div className="relative z-20 text-center pt-16 pb-8">
         <h1 className="text-4xl font-light text-gray-800 mb-2">
-          🌸 Your Garden of Thoughts
+          🌸 Your Personal Garden
         </h1>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto px-4">
           Each flower represents a moment in your emotional journey
         </p>
         <div className="mt-4 text-sm text-gray-500">
-          {posts.length} flowers in your garden
+          {posts.length} {posts.length === 1 ? 'flower' : 'flowers'} in your garden
         </div>
       </div>
 
-      {/* Garden Container - Fixed height to fit in viewport */}
-      <div className="relative w-full h-[calc(100vh-200px)] min-h-[500px]">
-        {/* Garden ground */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-green-200/40 to-transparent" />
-        
+      {/* Garden Container */}
+      <div className="relative w-full h-[calc(100vh-200px)] min-h-[500px] z-20">
         {posts.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
+            <div className="text-center bg-white/70 p-8 rounded-xl backdrop-blur-sm border border-white/80 shadow-sm">
               <div className="text-6xl mb-4">🌱</div>
-              <p className="text-gray-500 text-xl">
-                No flowers yet. Share your thoughts to grow your garden.
+              <p className="text-gray-600 text-xl mb-4">
+                Your garden is empty
+              </p>
+              <p className="text-gray-500">
+                Share your thoughts to plant your first flower
               </p>
             </div>
           </div>
