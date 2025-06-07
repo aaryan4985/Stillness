@@ -1,48 +1,100 @@
 import { useEffect, useState } from "react";
 
-// Mood to flower mapping with colors, shapes, and symbols
+// Mood to flower mapping
 const moodFlowers = {
-  calm: { color: "bg-blue-400", symbol: "🌸", shape: "rounded-full", glow: "shadow-blue-400/50" },
-  melancholy: { color: "bg-purple-500", symbol: "🥀", shape: "rounded-full", glow: "shadow-purple-500/50" },
-  reflective: { color: "bg-teal-400", symbol: "🌺", shape: "rounded-full", glow: "shadow-teal-400/50" },
-  hopeful: { color: "bg-green-400", symbol: "🌻", shape: "rounded-full", glow: "shadow-green-400/50" },
-  anxious: { color: "bg-orange-400", symbol: "🌼", shape: "rounded-full", glow: "shadow-orange-400/50" },
-  content: { color: "bg-emerald-400", symbol: "🌷", shape: "rounded-full", glow: "shadow-emerald-400/50" },
-  nostalgic: { color: "bg-yellow-400", symbol: "🌙", shape: "rounded-full", glow: "shadow-yellow-400/50" },
-  lonely: { color: "bg-indigo-500", symbol: "🌹", shape: "rounded-full", glow: "shadow-indigo-500/50" },
-  peaceful: { color: "bg-cyan-400", symbol: "🏵️", shape: "rounded-full", glow: "shadow-cyan-400/50" },
-  heartbroken: { color: "bg-red-500", symbol: "💔", shape: "rounded-full", glow: "shadow-red-500/50" },
-  zen: { color: "bg-gray-400", symbol: "🕉️", shape: "rounded-full", glow: "shadow-gray-400/50" },
+  calm: { color: "from-blue-300 to-blue-500", symbol: "🌸", glow: "shadow-blue-400/30" },
+  melancholy: { color: "from-purple-400 to-purple-700", symbol: "🥀", glow: "shadow-purple-400/30" },
+  reflective: { color: "from-teal-300 to-teal-600", symbol: "🌺", glow: "shadow-teal-400/30" },
+  hopeful: { color: "from-yellow-300 to-orange-400", symbol: "🌻", glow: "shadow-yellow-400/40" },
+  anxious: { color: "from-orange-300 to-red-400", symbol: "🌼", glow: "shadow-orange-400/30" },
+  content: { color: "from-emerald-300 to-emerald-500", symbol: "🌷", glow: "shadow-emerald-400/30" },
+  nostalgic: { color: "from-amber-300 to-yellow-500", symbol: "🌙", glow: "shadow-amber-400/30" },
+  lonely: { color: "from-indigo-400 to-purple-600", symbol: "🌹", glow: "shadow-indigo-400/30" },
+  peaceful: { color: "from-cyan-300 to-blue-400", symbol: "🏵️", glow: "shadow-cyan-400/30" },
+  heartbroken: { color: "from-red-400 to-rose-600", symbol: "💔", glow: "shadow-red-400/30" },
+  zen: { color: "from-gray-300 to-slate-500", symbol: "🕉️", glow: "shadow-gray-400/20" },
+  "burnt out": { color: "from-gray-400 to-gray-700", symbol: "🌫️", glow: "shadow-gray-500/20" },
+  overwhelmed: { color: "from-red-300 to-pink-500", symbol: "🌀", glow: "shadow-pink-400/30" },
+  motivated: { color: "from-green-400 to-lime-500", symbol: "⚡", glow: "shadow-green-400/40" },
+  detached: { color: "from-slate-300 to-gray-500", symbol: "🌫️", glow: "shadow-slate-400/20" },
+  grateful: { color: "from-pink-300 to-rose-400", symbol: "🙏", glow: "shadow-pink-400/30" },
+  "in love": { color: "from-pink-400 to-red-400", symbol: "💕", glow: "shadow-pink-400/40" },
+  inspired: { color: "from-violet-300 to-purple-500", symbol: "✨", glow: "shadow-violet-400/40" }
 };
 
-// Generate random position for organic garden layout
-const generatePosition = (index) => {
-  const seed = index * 137.508; // Golden angle for natural distribution
-  const radius = Math.sqrt(index) * 40;
-  const angle = seed * (Math.PI / 180);
+// Generate non-overlapping positions in a grid-like garden layout
+const generateGardenPositions = (postCount) => {
+  const positions = [];
+  const minDistance = 140; // Increased minimum distance
+  const maxAttempts = 50;
   
-  return {
-    x: Math.cos(angle) * radius + Math.random() * 100 - 50,
-    y: Math.sin(angle) * radius + Math.random() * 100 - 50,
-  };
+  for (let i = 0; i < postCount; i++) {
+    let position;
+    let attempts = 0;
+    let validPosition = false;
+    
+    while (!validPosition && attempts < maxAttempts) {
+      // Create more organized positioning with some randomness
+      const row = Math.floor(i / 4); // 4 flowers per row roughly
+      const col = i % 4;
+      
+      position = {
+        x: (col * 180) - 270 + (Math.random() - 0.5) * 60, // More spread out
+        y: (row * 120) - 150 + (Math.random() - 0.5) * 40
+      };
+      
+      // Check if position is valid (no overlaps)
+      validPosition = positions.every(pos => {
+        const distance = Math.sqrt(
+          Math.pow(pos.x - position.x, 2) + Math.pow(pos.y - position.y, 2)
+        );
+        return distance >= minDistance;
+      });
+      
+      attempts++;
+    }
+    
+    positions.push(position || { x: i * 100 - 200, y: 0 }); // Fallback position
+  }
+  
+  return positions;
 };
 
-// Flower component with hover interactions
-const Flower = ({ post, index, onClick }) => {
+// Flower component
+const Flower = ({ post, position, index, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [position] = useState(() => generatePosition(index, 100));
+  const [isVisible, setIsVisible] = useState(false);
   
   const flower = moodFlowers[post.mood?.toLowerCase()] || moodFlowers.calm;
-  const createdAt = new Date(post.createdAt?.seconds * 1000 || Date.now());
+  
+  // Handle Firebase timestamp format
+  const getCreatedDate = () => {
+    if (post.createdAt?.toDate) {
+      return post.createdAt.toDate();
+    } else if (post.createdAt?.seconds) {
+      return new Date(post.createdAt.seconds * 1000);
+    } else {
+      return new Date(post.createdAt || Date.now());
+    }
+  };
+  
+  const createdAt = getCreatedDate();
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), index * 150);
+    return () => clearTimeout(timer);
+  }, [index]);
   
   return (
     <div
-      className="absolute transition-all duration-700 ease-out cursor-pointer"
+      className={`absolute transition-all duration-700 ease-out cursor-pointer ${
+        isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+      }`}
       style={{
         left: `calc(50% + ${position.x}px)`,
         top: `calc(50% + ${position.y}px)`,
-        transform: `translate(-50%, -50%) scale(${isHovered ? 1.2 : 1}) rotate(${isHovered ? 5 : 0}deg)`,
-        animationDelay: `${index * 150}ms`,
+        transform: `translate(-50%, -50%) ${isHovered ? 'scale(1.1)' : 'scale(1)'}`,
+        zIndex: isHovered ? 20 : 10,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -50,72 +102,98 @@ const Flower = ({ post, index, onClick }) => {
     >
       {/* Flower stem */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-        <div className="w-1 h-12 bg-green-500/60 rounded-full"></div>
+        <div className="w-2 h-16 bg-green-500 rounded-full shadow-sm" />
+        {/* Small leaves */}
+        <div className="absolute top-1/2 -left-2 text-xs">🍃</div>
+        <div className="absolute top-3/4 -right-2 text-xs">🍃</div>
       </div>
       
-      {/* Flower bloom */}
+      {/* Flower petals */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className={`absolute w-3 h-6 bg-gradient-to-t ${flower.color} rounded-full opacity-70`}
+            style={{
+              transform: `rotate(${60 * i}deg) translateY(-20px)`,
+              transformOrigin: 'center bottom',
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Flower center */}
       <div
-        className={`
-          w-16 h-16 ${flower.color} ${flower.shape} ${flower.glow}
-          flex items-center justify-center text-2xl
-          shadow-lg animate-pulse
-          transition-all duration-500
-          ${isHovered ? 'shadow-2xl' : 'shadow-lg'}
-        `}
+        className={`relative w-16 h-16 bg-gradient-to-br ${flower.color} rounded-full ${flower.glow} shadow-xl flex items-center justify-center transition-all duration-300 border-2 border-white/30`}
         style={{
-          animation: `flowerGrow 0.8s ease-out ${index * 150}ms both, 
-                     gentle-sway 4s ease-in-out infinite ${index * 200}ms`,
+          boxShadow: isHovered 
+            ? `0 0 25px ${flower.glow.split('/')[0].replace('shadow-', '').replace('-', ', ')}/60, 0 8px 20px rgba(0,0,0,0.3)`
+            : `0 0 15px ${flower.glow.split('/')[0].replace('shadow-', '').replace('-', ', ')}/40, 0 4px 12px rgba(0,0,0,0.2)`
         }}
       >
-        {flower.symbol}
+        <span className="text-2xl">{flower.symbol}</span>
       </div>
       
-      {/* Hover tooltip */}
+      {/* Tooltip */}
       {isHovered && (
-        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap backdrop-blur-sm">
+        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-black/90 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap backdrop-blur-sm border border-white/20 shadow-xl">
           <div className="font-medium capitalize">{post.mood}</div>
           <div className="text-xs opacity-75">
-            {createdAt.toLocaleDateString()}
+            {createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90" />
         </div>
       )}
     </div>
   );
 };
 
-// Modal for flower details
+// Modal component
 const FlowerModal = ({ post, onClose }) => {
   if (!post) return null;
   
   const flower = moodFlowers[post.mood?.toLowerCase()] || moodFlowers.calm;
-  const createdAt = new Date(post.createdAt?.seconds * 1000 || Date.now());
+  
+  const getCreatedDate = () => {
+    if (post.createdAt?.toDate) {
+      return post.createdAt.toDate();
+    } else if (post.createdAt?.seconds) {
+      return new Date(post.createdAt.seconds * 1000);
+    } else {
+      return new Date(post.createdAt || Date.now());
+    }
+  };
+  
+  const createdAt = getCreatedDate();
   
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full border border-gray-700">
+      <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
         <div className="text-center mb-6">
-          <div className={`w-24 h-24 ${flower.color} rounded-full flex items-center justify-center text-4xl mx-auto mb-4 ${flower.glow} shadow-2xl`}>
+          <div className={`w-20 h-20 bg-gradient-to-br ${flower.color} rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl border-2 border-white/20`}>
             {flower.symbol}
           </div>
-          <h3 className="text-2xl font-bold text-white capitalize mb-2">{post.mood}</h3>
+          <h3 className="text-xl font-bold text-white capitalize mb-2">{post.mood}</h3>
           <p className="text-gray-400 text-sm">
             {createdAt.toLocaleDateString('en-US', { 
               weekday: 'long', 
-              year: 'numeric', 
               month: 'long', 
-              day: 'numeric' 
+              day: 'numeric',
+              year: 'numeric'
             })}
           </p>
         </div>
         
         <div className="text-center">
-          <p className="text-gray-300 mb-6 leading-relaxed">
-            {post.content}
-          </p>
+          <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+            <p className="text-gray-200 leading-relaxed">
+              "{post.content}"
+            </p>
+          </div>
           
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
           >
             Close
           </button>
@@ -125,132 +203,118 @@ const FlowerModal = ({ post, onClose }) => {
   );
 };
 
-const Garden = () => {
-  const [userPosts, setUserPosts] = useState([]);
+const Garden = ({ userPosts = [] }) => {
   const [selectedPost, setSelectedPost] = useState(null);
-  // const [currentUser] = useState({ uid: 'demo-user' }); // Demo user
+  const [flowerPositions, setFlowerPositions] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Demo data - replace with Firebase integration
+  // Demo data for testing - remove this when connecting to real Firebase
+  const demoData = [
+    { 
+      id: '1', 
+      mood: 'Anxious', 
+      content: 'Feeling worried about the presentation tomorrow.', 
+      createdAt: { seconds: Date.now() / 1000 - 86400 },
+      userId: 'demo-user'
+    },
+    { 
+      id: '2', 
+      mood: 'Hopeful', 
+      content: 'Started a new chapter in my life today.', 
+      createdAt: { seconds: Date.now() / 1000 - 172800 },
+      userId: 'demo-user'
+    },
+    { 
+      id: '3', 
+      mood: 'Calm', 
+      content: 'Evening meditation brought me peace.', 
+      createdAt: { seconds: Date.now() / 1000 - 259200 },
+      userId: 'demo-user'
+    },
+    { 
+      id: '4', 
+      mood: 'Grateful', 
+      content: 'Thankful for family time this weekend.', 
+      createdAt: { seconds: Date.now() / 1000 - 345600 },
+      userId: 'demo-user'
+    },
+    { 
+      id: '5', 
+      mood: 'Reflective', 
+      content: 'Thinking about how much I have grown this year.', 
+      createdAt: { seconds: Date.now() / 1000 - 432000 },
+      userId: 'demo-user'
+    }
+  ];
+
+  // Use demo data if no user posts provided
+  const posts = userPosts.length > 0 ? userPosts : demoData;
+
   useEffect(() => {
-    const demoFlowers = [
-      { id: 1, mood: 'calm', content: 'Watching the sunset from my window, feeling grateful for this peaceful moment.', createdAt: { seconds: Date.now() / 1000 - 86400 } },
-      { id: 2, mood: 'hopeful', content: 'Started a new book today. Excited to see where this journey takes me.', createdAt: { seconds: Date.now() / 1000 - 172800 } },
-      { id: 3, mood: 'reflective', content: 'Thinking about old friendships and how people change over time.', createdAt: { seconds: Date.now() / 1000 - 259200 } },
-      { id: 4, mood: 'nostalgic', content: 'Found my old photo album. So many beautiful memories.', createdAt: { seconds: Date.now() / 1000 - 345600 } },
-      { id: 5, mood: 'peaceful', content: 'Morning meditation session. The mind feels clear and centered.', createdAt: { seconds: Date.now() / 1000 - 432000 } },
-      { id: 6, mood: 'content', content: 'Simple dinner with family. These moments are everything.', createdAt: { seconds: Date.now() / 1000 - 518400 } },
-      { id: 7, mood: 'zen', content: 'Sitting in silence, listening to the rain. Perfect afternoon.', createdAt: { seconds: Date.now() / 1000 - 604800 } },
-      { id: 8, mood: 'melancholy', content: 'Some days feel heavier than others. That\'s okay too.', createdAt: { seconds: Date.now() / 1000 - 691200 } },
-    ];
-    
-    setUserPosts(demoFlowers);
-  }, []);
+    if (posts.length > 0) {
+      const positions = generateGardenPositions(posts.length);
+      setFlowerPositions(positions);
+      setIsLoaded(true);
+    }
+  }, [posts]);
 
   return (
-    <>
-      <style jsx>{`
-        @keyframes flowerGrow {
-          0% {
-            transform: scale(0) rotate(-180deg);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.1) rotate(-90deg);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1) rotate(0deg);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes gentle-sway {
-          0%, 100% {
-            transform: rotate(0deg);
-          }
-          25% {
-            transform: rotate(1deg);
-          }
-          75% {
-            transform: rotate(-1deg);
-          }
-        }
-      `}</style>
+    <div className="h-screen bg-gradient-to-br from-sky-100 via-green-50 to-emerald-100 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-blue-200/40 rounded-full blur-3xl" />
+        <div className="absolute top-40 right-32 w-24 h-24 bg-green-200/40 rounded-full blur-2xl" />
+        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-yellow-200/30 rounded-full blur-3xl" />
+      </div>
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white relative overflow-hidden">
-        {/* Ambient background effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.1)_0%,_transparent_50%)] pointer-events-none"></div>
-        <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><pattern id='grain' width='100' height='100' patternUnits='userSpaceOnUse'><circle cx='50' cy='50' r='0.5' fill='%23ffffff' opacity='0.02'/></pattern></defs><rect width='100' height='100' fill='url(%23grain)'/></svg>")`,
-          }}
-        ></div>
-        
-        {/* Header */}
-        <div className="relative z-10 text-center py-12">
-          <h1 className="text-5xl font-light text-white mb-4">
-            🌸 Your Garden of Thoughts
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto px-4">
-            Each flower represents a moment in your emotional journey. Click to revisit your thoughts.
-          </p>
-          <div className="mt-8 text-sm text-gray-500">
-            {userPosts.length} flowers blooming in your garden
-          </div>
-        </div>
-
-        {/* Garden Container */}
-        <div className="relative w-full h-[70vh] min-h-[500px]">
-          {userPosts.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🌱</div>
-                <p className="text-gray-400 text-xl">
-                  No flowers yet. Share your stillness to grow your garden.
-                </p>
-              </div>
-            </div>
-          ) : (
-            userPosts.map((post, index) => (
-              <Flower
-                key={post.id}
-                post={post}
-                index={index}
-                onClick={setSelectedPost}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Garden Ground */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-green-900/20 to-transparent pointer-events-none"></div>
-
-        {/* Floating particles */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 3}s`,
-              }}
-            ></div>
-          ))}
+      {/* Header */}
+      <div className="relative z-10 text-center pt-8 pb-4">
+        <h1 className="text-4xl font-light text-gray-800 mb-2">
+          🌸 Your Garden of Thoughts
+        </h1>
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto px-4">
+          Each flower represents a moment in your emotional journey
+        </p>
+        <div className="mt-4 text-sm text-gray-500">
+          {posts.length} flowers in your garden
         </div>
       </div>
 
-      {/* Flower Detail Modal */}
+      {/* Garden Container - Fixed height to fit in viewport */}
+      <div className="relative w-full h-[calc(100vh-200px)] min-h-[500px]">
+        {/* Garden ground */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-green-200/40 to-transparent" />
+        
+        {posts.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🌱</div>
+              <p className="text-gray-500 text-xl">
+                No flowers yet. Share your thoughts to grow your garden.
+              </p>
+            </div>
+          </div>
+        ) : (
+          isLoaded && posts.map((post, index) => (
+            <Flower
+              key={post.id}
+              post={post}
+              position={flowerPositions[index] || { x: 0, y: 0 }}
+              index={index}
+              onClick={setSelectedPost}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
       {selectedPost && (
         <FlowerModal
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
         />
       )}
-    </>
+    </div>
   );
 };
 
