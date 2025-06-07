@@ -4,6 +4,7 @@ import Signup from "./pages/Signup";
 import Signin from "./pages/Signin";
 import Home from "./pages/Home";
 import UserSetup from "./pages/UserSetup";
+import Garden from "./pages/Garden";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route path="/signin" element={<Signin />} />
       <Route path="/home" element={<Home />} />
       <Route path="/usersetup" element={<UserSetup />} />
+      <Route path="/garden" element={<Garden />} />
     </Routes>
   );
 }
