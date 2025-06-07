@@ -1,6 +1,6 @@
 // src/components/PostComposer.jsx
 import { useEffect, useState } from "react";
-import { db, auth, storage } from "../firebase/config";
+import { db, auth } from "../firebase/config";
 import {
   collection,
   addDoc,
@@ -9,17 +9,15 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { MOOD_OPTIONS } from "../constants";
-import { v4 as uuidv4 } from "uuid";
 
 const PostComposer = () => {
   const [content, setContent] = useState("");
   const [mood, setMood] = useState("");
-  const [imageFile, setImageFile] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const [userMeta, setUserMeta] = useState({ username: "", selectedPfp: "" });
 
@@ -41,19 +39,11 @@ const PostComposer = () => {
     e.preventDefault();
     if (!auth.currentUser) return;
     if (!mood.trim()) return alert("Please select a mood.");
-    if (!content.trim() && !imageFile) return alert("Post must contain text or an image.");
+    if (!content.trim()) return alert("Please share your thoughts.");
 
     setSubmitting(true);
 
     try {
-      let imageUrl = null;
-
-      if (imageFile) {
-        const imageRef = ref(storage, `posts/${auth.currentUser.uid}/${uuidv4()}`);
-        await uploadBytes(imageRef, imageFile);
-        imageUrl = await getDownloadURL(imageRef);
-      }
-
       const now = Timestamp.now();
       const expiresAt = Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -63,7 +53,6 @@ const PostComposer = () => {
         selectedPfp: userMeta.selectedPfp || null,
         content: content.trim(),
         mood,
-        imageUrl,
         privatePosts: isPrivate,
         createdAt: serverTimestamp(),
         expiresAt,
@@ -72,9 +61,9 @@ const PostComposer = () => {
       // Reset form
       setContent("");
       setMood("");
-      setImageFile(null);
       setIsPrivate(false);
       setIsExpanded(false);
+      setIsFocused(false);
     } catch (error) {
       console.error("Error posting:", error);
       alert("Failed to post.");
@@ -83,157 +72,214 @@ const PostComposer = () => {
     }
   };
 
-  const handleFocus = () => setIsExpanded(true);
+  const handleFocus = () => {
+    setIsExpanded(true);
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
 
   const handleCancel = () => {
     setIsExpanded(false);
+    setIsFocused(false);
     setContent("");
     setMood("");
-    setImageFile(null);
     setIsPrivate(false);
   };
 
-  return (
-    <div className="sticky top-0 z-20 bg-black/95 backdrop-blur-lg border-b border-white/10 mb-1">
-      {/* Background Orbs */}
-      <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/3 rounded-full blur-3xl"></div>
-      <div className="absolute -top-5 right-1/3 w-20 h-20 bg-white/5 rounded-full blur-2xl"></div>
+  const getMoodColor = (selectedMood) => {
+    const colors = {
+      calm: 'border-blue-400/30 bg-blue-400/10 text-blue-300',
+      melancholy: 'border-purple-400/30 bg-purple-400/10 text-purple-300',
+      reflective: 'border-teal-400/30 bg-teal-400/10 text-teal-300',
+      hopeful: 'border-green-400/30 bg-green-400/10 text-green-300',
+      anxious: 'border-orange-400/30 bg-orange-400/10 text-orange-300',
+      content: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
+      nostalgic: 'border-amber-400/30 bg-amber-400/10 text-amber-300',
+      lonely: 'border-indigo-400/30 bg-indigo-400/10 text-indigo-300',
+      peaceful: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300',
+      heartbroken: 'border-red-400/30 bg-red-400/10 text-red-300',
+      zen: 'border-gray-400/30 bg-gray-400/10 text-gray-300',
+    };
+    return colors[selectedMood?.toLowerCase()] || 'border-white/20 bg-white/5 text-white/70';
+  };
 
-      <div className="relative max-w-2xl mx-auto px-6 py-4">
-        <form onSubmit={handlePostSubmit} className="space-y-4">
-          {/* Header */}
-          <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0">
-              {userMeta.selectedPfp ? (
-                <img
-                  src={userMeta.selectedPfp}
-                  alt="profile"
-                  className="w-10 h-10 rounded-full object-cover border border-white/10"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-white/10 rounded-full border border-white/20 flex items-center justify-center text-white/60 text-sm">
-                  ✨
+  return (
+    <div className="sticky top-0 z-30 backdrop-blur-xl bg-black/90 border-b border-white/[0.08]">
+      {/* Floating orbs for ambiance */}
+      <div className="absolute -top-20 left-1/4 w-40 h-40 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute -top-10 right-1/3 w-24 h-24 bg-gradient-to-r from-teal-500/8 to-cyan-500/8 rounded-full blur-2xl"></div>
+
+      <div className="relative max-w-3xl mx-auto px-6 py-6">
+        <form onSubmit={handlePostSubmit}>
+          {/* Main Composer Card */}
+          <div className={`
+            relative bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.02] 
+            backdrop-blur-sm rounded-3xl border transition-all duration-500 ease-out
+            ${isFocused || isExpanded 
+              ? 'border-white/20 shadow-2xl shadow-white/5 scale-[1.02]' 
+              : 'border-white/[0.08] hover:border-white/[0.15] hover:shadow-xl shadow-black/20'
+            }
+          `}>
+            
+            {/* Subtle glow effect */}
+            <div className={`
+              absolute inset-0 rounded-3xl bg-gradient-to-r from-white/[0.02] via-transparent to-white/[0.02] 
+              transition-opacity duration-500
+              ${isFocused || isExpanded ? 'opacity-100' : 'opacity-0'}
+            `}></div>
+
+            <div className="relative p-6">
+              {/* Header with Avatar and Input */}
+              <div className="flex items-start gap-4">
+                {/* Enhanced Avatar */}
+                <div className="flex-shrink-0 relative">
+                  {userMeta.selectedPfp ? (
+                    <div className="relative">
+                      <img
+                        src={userMeta.selectedPfp}
+                        alt="profile"
+                        className="w-14 h-14 rounded-2xl object-cover border-2 border-white/10 shadow-lg"
+                      />
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-transparent via-transparent to-black/20"></div>
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 bg-gradient-to-br from-white/15 via-white/8 to-white/5 rounded-2xl border-2 border-white/10 flex items-center justify-center text-white/70 text-xl font-light shadow-lg">
+                      ✨
+                    </div>
+                  )}
+                  {/* Online indicator */}
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full border-2 border-black/80 shadow-sm"></div>
+                </div>
+
+                {/* Main Input Area */}
+                <div className="flex-1 space-y-4">
+                  <textarea
+                    rows={isExpanded ? 4 : 2}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    placeholder="Share your stillness..."
+                    className="w-full bg-transparent text-white/90 placeholder-white/40 resize-none focus:outline-none text-lg font-light tracking-wide leading-relaxed transition-all duration-300"
+                  />
+
+                  {/* Mood Selector - Redesigned */}
+                  {isExpanded && (
+                    <div className="space-y-4 animate-in slide-in-from-top-3 duration-400">
+                      {/* Mood Pills Grid */}
+                      <div>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-xs font-medium tracking-wider text-white/60 uppercase">
+                            Choose your mood
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {MOOD_OPTIONS.map((moodOption) => (
+                            <button
+                              key={moodOption}
+                              type="button"
+                              onClick={() => setMood(moodOption)}
+                              className={`
+                                px-4 py-2.5 rounded-xl text-sm font-medium border backdrop-blur-sm
+                                transition-all duration-300 hover:scale-105 focus:outline-none
+                                ${mood === moodOption 
+                                  ? getMoodColor(moodOption) + ' ring-1 ring-current/30 shadow-lg' 
+                                  : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/8 hover:text-white/80'
+                                }
+                              `}
+                            >
+                              {moodOption}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bottom Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t border-white/[0.08]">
+                        {/* Privacy Toggle */}
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsPrivate(!isPrivate)}
+                            className={`
+                              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+                              transition-all duration-300 border backdrop-blur-sm
+                              ${isPrivate 
+                                ? 'border-amber-400/30 bg-amber-400/10 text-amber-300' 
+                                : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:text-white/80'
+                              }
+                            `}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+                            </svg>
+                            Private
+                          </button>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="px-5 py-2.5 text-sm font-medium text-white/60 hover:text-white/80 hover:bg-white/5 rounded-xl transition-all duration-300"
+                          >
+                            Cancel
+                          </button>
+                          
+                          <button
+                            type="submit"
+                            disabled={submitting || !content.trim() || !mood}
+                            className="group relative px-6 py-2.5 bg-gradient-to-r from-white to-white/90 text-black text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 overflow-hidden"
+                          >
+                            {/* Button glow effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            
+                            <div className="relative flex items-center gap-2">
+                              {submitting ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                                  <span>Sharing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Share Stillness</span>
+                                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                  </svg>
+                                </>
+                              )}
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Expand Hint for Collapsed State */}
+              {!isExpanded && content && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    type="button"
+                    onClick={handleFocus}
+                    className="flex items-center gap-2 text-xs font-medium text-white/50 hover:text-white/70 transition-colors duration-300 px-4 py-2 rounded-full hover:bg-white/5"
+                  >
+                    <span>Continue writing</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
                 </div>
               )}
             </div>
-
-            <div className="flex-1 min-w-0">
-              <textarea
-                rows={isExpanded ? 3 : 1}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onFocus={handleFocus}
-                placeholder="Share your stillness..."
-                className="w-full bg-transparent text-white/90 placeholder-white/40 resize-none focus:outline-none text-lg font-light tracking-wide leading-relaxed"
-              />
-            </div>
           </div>
-
-          {/* Expanded Fields */}
-          {isExpanded && (
-            <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-              {/* Mood Selector */}
-              <div className="flex items-center space-x-3">
-                <span className="text-xs font-extralight tracking-[0.1em] text-white/60 uppercase min-w-[60px]">
-                  Mood
-                </span>
-                <select
-                  value={mood}
-                  onChange={(e) => setMood(e.target.value)}
-                  className="flex-1 bg-white/5 text-white/80 py-2 px-3 rounded-lg border border-white/20 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all duration-300 text-sm font-light"
-                  required
-                >
-                  <option value="" className="bg-black text-white/60">Select mood...</option>
-                  {MOOD_OPTIONS.map((m) => (
-                    <option key={m} value={m} className="bg-black text-white">{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Image Upload */}
-              <div className="flex items-center space-x-3">
-                <span className="text-xs font-extralight tracking-[0.1em] text-white/60 uppercase min-w-[60px]">
-                  Image
-                </span>
-                <label className="flex-1 cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files[0])}
-                    className="hidden"
-                  />
-                  <div className="flex items-center space-x-2 py-2 px-3 rounded-lg border border-white/20 hover:border-white/30 hover:bg-white/5 transition-all duration-300">
-                    <span className="text-white/60 text-sm">📷</span>
-                    <span className="text-white/60 text-sm font-light">
-                      {imageFile ? imageFile.name : "Add image"}
-                    </span>
-                  </div>
-                </label>
-              </div>
-
-              {/* Privacy Toggle + Buttons */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                <label className="flex items-center space-x-2 cursor-pointer group">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={isPrivate}
-                      onChange={() => setIsPrivate(!isPrivate)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 rounded border transition-all duration-300 ${
-                      isPrivate ? 'bg-white border-white' : 'border-white/30 hover:border-white/50'
-                    }`}>
-                      {isPrivate && (
-                        <svg className="w-3 h-3 text-black m-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs font-light text-white/70 group-hover:text-white/90 transition-colors">
-                    Private
-                  </span>
-                </label>
-
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-4 py-2 text-xs font-light text-white/60 hover:text-white/80 hover:bg-white/5 rounded-lg transition-all duration-300 tracking-[0.1em]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || (!content.trim() && !imageFile) || !mood}
-                    className="px-6 py-2 bg-white text-black text-xs font-light tracking-[0.1em] rounded-lg hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-white/20"
-                  >
-                    {submitting ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin"></div>
-                        <span>Sharing...</span>
-                      </div>
-                    ) : (
-                      "Share Stillness"
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Compact Action Bar */}
-          {!isExpanded && content && (
-            <div className="flex justify-end">
-              <button
-                onClick={handleFocus}
-                className="text-xs font-light text-white/60 hover:text-white/80 transition-colors tracking-[0.1em]"
-              >
-                Continue writing...
-              </button>
-            </div>
-          )}
         </form>
       </div>
     </div>
