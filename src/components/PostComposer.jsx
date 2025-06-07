@@ -1,7 +1,14 @@
 // src/components/PostComposer.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { db, auth, storage } from "../firebase/config";
-import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  Timestamp,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { MOOD_OPTIONS } from "../constants";
 import { v4 as uuidv4 } from "uuid";
@@ -10,22 +17,31 @@ const PostComposer = () => {
   const [content, setContent] = useState("");
   const [mood, setMood] = useState("");
   const [imageFile, setImageFile] = useState(null);
-  const [isAnonymous, setIsAnonymous] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const [userMeta, setUserMeta] = useState({ username: "", selectedPfp: "" });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const { username, selectedPfp } = userSnap.data();
+        setUserMeta({ username, selectedPfp });
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     if (!auth.currentUser) return;
-    if (!mood.trim()) {
-      alert("Please select a mood.");
-      return;
-    }
-    if (!content.trim() && !imageFile) {
-      alert("Post must contain text or an image.");
-      return;
-    }
+    if (!mood.trim()) return alert("Please select a mood.");
+    if (!content.trim() && !imageFile) return alert("Post must contain text or an image.");
 
     setSubmitting(true);
 
@@ -39,15 +55,16 @@ const PostComposer = () => {
       }
 
       const now = Timestamp.now();
-      const expiresAt = Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000); // 24 hours later
+      const expiresAt = Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000); // 24 hours
 
       await addDoc(collection(db, "posts"), {
         userId: auth.currentUser.uid,
+        username: userMeta.username || "User",
+        selectedPfp: userMeta.selectedPfp || null,
         content: content.trim(),
         mood,
         imageUrl,
-        isAnonymous,
-        isPrivate,
+        privatePosts: isPrivate,
         createdAt: serverTimestamp(),
         expiresAt,
       });
@@ -56,7 +73,6 @@ const PostComposer = () => {
       setContent("");
       setMood("");
       setImageFile(null);
-      setIsAnonymous(true);
       setIsPrivate(false);
       setIsExpanded(false);
     } catch (error) {
@@ -67,36 +83,40 @@ const PostComposer = () => {
     }
   };
 
-  const handleFocus = () => {
-    setIsExpanded(true);
-  };
+  const handleFocus = () => setIsExpanded(true);
 
   const handleCancel = () => {
     setIsExpanded(false);
     setContent("");
     setMood("");
     setImageFile(null);
-    setIsAnonymous(true);
     setIsPrivate(false);
   };
 
   return (
     <div className="sticky top-0 z-20 bg-black/95 backdrop-blur-lg border-b border-white/10 mb-1">
-      {/* Background floating orbs */}
+      {/* Background Orbs */}
       <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/3 rounded-full blur-3xl"></div>
       <div className="absolute -top-5 right-1/3 w-20 h-20 bg-white/5 rounded-full blur-2xl"></div>
-      
+
       <div className="relative max-w-2xl mx-auto px-6 py-4">
         <form onSubmit={handlePostSubmit} className="space-y-4">
-          
-          {/* Compact Header */}
+          {/* Header */}
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-white/10 rounded-full border border-white/20 flex items-center justify-center">
-                <span className="text-white/60 text-sm">✨</span>
-              </div>
+              {userMeta.selectedPfp ? (
+                <img
+                  src={userMeta.selectedPfp}
+                  alt="profile"
+                  className="w-10 h-10 rounded-full object-cover border border-white/10"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-white/10 rounded-full border border-white/20 flex items-center justify-center text-white/60 text-sm">
+                  ✨
+                </div>
+              )}
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <textarea
                 rows={isExpanded ? 3 : 1}
@@ -109,11 +129,10 @@ const PostComposer = () => {
             </div>
           </div>
 
-          {/* Expanded Options */}
+          {/* Expanded Fields */}
           {isExpanded && (
             <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-              
-              {/* Mood Selection */}
+              {/* Mood Selector */}
               <div className="flex items-center space-x-3">
                 <span className="text-xs font-extralight tracking-[0.1em] text-white/60 uppercase min-w-[60px]">
                   Mood
@@ -152,61 +171,31 @@ const PostComposer = () => {
                 </label>
               </div>
 
-              {/* Privacy Toggles */}
+              {/* Privacy Toggle + Buttons */}
               <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                <div className="flex space-x-4">
-                  <label className="flex items-center space-x-2 cursor-pointer group">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={isAnonymous}
-                        onChange={() => setIsAnonymous(!isAnonymous)}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 rounded border transition-all duration-300 ${
-                        isAnonymous 
-                          ? 'bg-white border-white' 
-                          : 'border-white/30 hover:border-white/50'
-                      }`}>
-                        {isAnonymous && (
-                          <svg className="w-3 h-3 text-black m-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
+                <label className="flex items-center space-x-2 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={isPrivate}
+                      onChange={() => setIsPrivate(!isPrivate)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 rounded border transition-all duration-300 ${
+                      isPrivate ? 'bg-white border-white' : 'border-white/30 hover:border-white/50'
+                    }`}>
+                      {isPrivate && (
+                        <svg className="w-3 h-3 text-black m-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </div>
-                    <span className="text-xs font-light text-white/70 group-hover:text-white/90 transition-colors">
-                      Anonymous
-                    </span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-2 cursor-pointer group">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={isPrivate}
-                        onChange={() => setIsPrivate(!isPrivate)}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 rounded border transition-all duration-300 ${
-                        isPrivate 
-                          ? 'bg-white border-white' 
-                          : 'border-white/30 hover:border-white/50'
-                      }`}>
-                        {isPrivate && (
-                          <svg className="w-3 h-3 text-black m-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs font-light text-white/70 group-hover:text-white/90 transition-colors">
-                      Private
-                    </span>
-                  </label>
-                </div>
+                  </div>
+                  <span className="text-xs font-light text-white/70 group-hover:text-white/90 transition-colors">
+                    Private
+                  </span>
+                </label>
 
-                {/* Action Buttons */}
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -234,7 +223,7 @@ const PostComposer = () => {
             </div>
           )}
 
-          {/* Compact Action Bar (when not expanded) */}
+          {/* Compact Action Bar */}
           {!isExpanded && content && (
             <div className="flex justify-end">
               <button
@@ -245,7 +234,6 @@ const PostComposer = () => {
               </button>
             </div>
           )}
-
         </form>
       </div>
     </div>
