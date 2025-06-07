@@ -1,17 +1,20 @@
 // src/components/PostFeed.jsx
 import { useEffect, useState } from "react";
-import { db } from "../firebase/config";
+import { db, auth } from "../firebase/config";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 const PostFeed = ({ selectedMood }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
 
+    // Create query to get posts - either public posts or private posts by current user
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(
@@ -21,7 +24,22 @@ const PostFeed = ({ selectedMood }) => {
           id: doc.id,
           ...doc.data(),
         }));
-        setPosts(allPosts);
+
+        // Filter posts based on privacy settings
+        const visiblePosts = allPosts.filter(post => {
+          // If post is not private, show it to everyone
+          if (!post.privatePosts) {
+            return true;
+          }
+          // If post is private, only show to the author
+          if (post.privatePosts && user && post.userId === user.uid) {
+            return true;
+          }
+          // Hide private posts from other users
+          return false;
+        });
+
+        setPosts(visiblePosts);
         setLoading(false);
       },
       (err) => {
@@ -32,7 +50,7 @@ const PostFeed = ({ selectedMood }) => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const filteredPosts = selectedMood
     ? [
@@ -111,6 +129,7 @@ const PostFeed = ({ selectedMood }) => {
                 post={post} 
                 index={index}
                 isHighlighted={selectedMood && post.mood === selectedMood}
+                currentUser={user}
               />
             ))}
           </div>
@@ -120,7 +139,7 @@ const PostFeed = ({ selectedMood }) => {
   );
 };
 
-const Post = ({ post, index, isHighlighted }) => {
+const Post = ({ post, index, isHighlighted, currentUser }) => {
   const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
@@ -141,6 +160,7 @@ const Post = ({ post, index, isHighlighted }) => {
   const isAnonymous = post.anonymousPosts;
   const username = isAnonymous ? "Anonymous" : post.username || "User";
   const avatarSrc = isAnonymous ? null : post.selectedPfp || null;
+  const isOwnPost = currentUser && post.userId === currentUser.uid;
 
   const getMoodColor = (mood) => {
     const colors = {
@@ -165,59 +185,79 @@ const Post = ({ post, index, isHighlighted }) => {
         transform transition-all duration-600 ease-out
         ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
         ${isHighlighted ? 'scale-[1.01] ring-1 ring-white/20 shadow-xl shadow-white/5' : ''}
+        ${post.privatePosts ? 'ring-1 ring-amber-400/20' : ''}
       `}
     >
-      <article className="group relative bg-gradient-to-br from-white/[0.03] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/[0.05] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.05] hover:to-white/[0.02] transition-all duration-400 overflow-hidden shadow-lg shadow-black/10">
+      <article className={`
+        group relative backdrop-blur-sm rounded-2xl border overflow-hidden shadow-lg shadow-black/10 transition-all duration-400
+        ${post.privatePosts 
+          ? 'bg-gradient-to-br from-amber-500/[0.08] via-amber-400/[0.04] to-amber-300/[0.02] border-amber-400/[0.15] hover:border-amber-400/[0.25] hover:from-amber-500/[0.12] hover:via-amber-400/[0.06] hover:to-amber-300/[0.03]' 
+          : 'bg-gradient-to-br from-white/[0.03] to-white/[0.01] border-white/[0.05] hover:border-white/[0.12] hover:from-white/[0.05] hover:to-white/[0.02]'
+        }
+      `}>
         
         <div className="relative p-6">
-          {/* Clean Header */}
-          <div className="flex items-center gap-4 mb-5">
-            {/* Refined Avatar */}
-            <div className="relative flex-shrink-0">
-              {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt="avatar"
-                  className="w-12 h-12 rounded-xl object-cover border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm"
-                />
-              ) : (
-                <div className="w-12 h-12 bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.03] text-white flex items-center justify-center rounded-xl font-medium text-base border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm">
-                  {isAnonymous ? "?" : username.charAt(0).toUpperCase()}
+          {/* Header with privacy indicator */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-4">
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt="avatar"
+                    className="w-12 h-12 rounded-xl object-cover border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.03] text-white flex items-center justify-center rounded-xl font-medium text-base border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm">
+                    {isAnonymous ? "?" : username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              {/* User info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`
+                    text-white/90 text-base font-medium tracking-wide truncate
+                    ${isAnonymous ? 'italic font-normal text-white/70' : ''}
+                  `}>
+                    {username}
+                    {isOwnPost && <span className="text-white/50 text-sm ml-2">(You)</span>}
+                  </span>
+                  <span className="text-white/30 text-sm">•</span>
+                  <span className="text-white/50 text-sm">{timestamp}</span>
                 </div>
-              )}
+                
+                {/* Mood badge */}
+                <div className={`
+                  inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm w-fit
+                  ${getMoodColor(post.mood)}
+                `}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
+                  <span className="capitalize tracking-wide">{post.mood}</span>
+                </div>
+              </div>
             </div>
 
-            {/* User info with cleaner layout */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <span className={`
-                  text-white/90 text-base font-medium tracking-wide truncate
-                  ${isAnonymous ? 'italic font-normal text-white/70' : ''}
-                `}>
-                  {username}
-                </span>
-                <span className="text-white/30 text-sm">•</span>
-                <span className="text-white/50 text-sm">{timestamp}</span>
+            {/* Privacy indicator - moved to top right */}
+            {post.privatePosts && (
+              <div className="flex items-center gap-2 text-amber-400/80 text-xs px-3 py-1.5 bg-amber-400/[0.08] rounded-full border border-amber-400/20 backdrop-blur-sm">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+                </svg>
+                <span className="font-medium">Private</span>
               </div>
-              
-              {/* Mood badge with better styling */}
-              <div className={`
-                inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm w-fit
-                ${getMoodColor(post.mood)}
-              `}>
-                <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
-                <span className="capitalize tracking-wide">{post.mood}</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Content with improved readability */}
+          {/* Content */}
           <div className="space-y-4">
             <p className="text-white/85 text-base leading-relaxed whitespace-pre-wrap font-light tracking-wide">
               {post.content}
             </p>
 
-            {/* Image with cleaner presentation */}
+            {/* Image */}
             {post.imageUrl && (
               <div className="relative rounded-xl overflow-hidden border border-white/[0.06] group-hover:border-white/[0.12] transition-all duration-300 shadow-md">
                 <img
@@ -229,17 +269,14 @@ const Post = ({ post, index, isHighlighted }) => {
               </div>
             )}
           </div>
-
-          {/* Privacy indicator - minimal and clean */}
-          {post.privatePosts && (
-            <div className="flex items-center gap-2 text-amber-400/70 text-xs mt-4 px-3 py-1.5 bg-amber-400/5 rounded-full border border-amber-400/10 w-fit">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
-              </svg>
-              <span>Private</span>
-            </div>
-          )}
         </div>
+
+        {/* Subtle border animation for private posts */}
+        {post.privatePosts && (
+          <div className="absolute inset-0 rounded-2xl pointer-events-none">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-amber-400/5 to-transparent animate-pulse"></div>
+          </div>
+        )}
       </article>
     </div>
   );
