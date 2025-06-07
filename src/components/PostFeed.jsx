@@ -41,80 +41,206 @@ const PostFeed = ({ selectedMood }) => {
       ]
     : posts;
 
-  if (loading) return <p className="text-white text-center py-4">Loading posts...</p>;
-  if (error) return <p className="text-red-500 text-center py-4">{error}</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+          <p className="text-white/60 text-sm animate-pulse">Loading your stillness...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-400 text-xl">!</span>
+          </div>
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-h-[70vh] overflow-y-auto space-y-6 px-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-      {filteredPosts.length === 0 ? (
-        <p className="text-white/60 text-center py-4">No posts yet.</p>
-      ) : (
-        filteredPosts.map((post) => <Post key={post.id} post={post} />)
-      )}
+    <div className="h-full">
+      {/* Clean Feed Container */}
+      <div 
+        className="h-full overflow-y-auto px-1 scroll-smooth"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.1) transparent'
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            width: 6px;
+          }
+          div::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          div::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+          }
+          div::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+          }
+        `}</style>
+        
+        {filteredPosts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
+              <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <h3 className="text-white/70 text-lg font-medium mb-3">The silence speaks volumes</h3>
+            <p className="text-white/50 text-sm max-w-sm leading-relaxed">
+              Be the first to share your stillness. Your thoughts matter in this quiet space.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6 py-4">
+            {filteredPosts.map((post, index) => (
+              <Post 
+                key={post.id} 
+                post={post} 
+                index={index}
+                isHighlighted={selectedMood && post.mood === selectedMood}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const Post = ({ post }) => {
+const Post = ({ post, index, isHighlighted }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), index * 80);
+    return () => clearTimeout(timer);
+  }, [index]);
+
   const timestamp = post.createdAt?.toDate
-    ? new Date(post.createdAt.toDate()).toLocaleString()
+    ? new Date(post.createdAt.toDate()).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
     : "Just now";
 
   const isAnonymous = post.anonymousPosts;
   const username = isAnonymous ? "Anonymous" : post.username || "User";
-  const avatarSrc = isAnonymous
-    ? null
-    : post.selectedPfp || null;
+  const avatarSrc = isAnonymous ? null : post.selectedPfp || null;
+
+  const getMoodColor = (mood) => {
+    const colors = {
+      calm: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+      melancholy: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+      reflective: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+      hopeful: 'text-green-400 bg-green-400/10 border-green-400/20',
+      anxious: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
+      content: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+      nostalgic: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+      lonely: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
+      peaceful: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+      heartbroken: 'text-red-400 bg-red-400/10 border-red-400/20',
+      zen: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+    };
+    return colors[mood?.toLowerCase()] || 'text-white/60 bg-white/5 border-white/10';
+  };
 
   return (
-    <div className="bg-white/5 p-5 rounded-xl border border-white/10 hover:border-white/20 transition-all">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          {/* Avatar */}
-          {avatarSrc ? (
-            <img
-              src={avatarSrc}
-              alt="avatar"
-              className="w-10 h-10 rounded-full object-cover border border-white/10"
-            />
-          ) : (
-            <div className="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-full font-semibold text-lg">
-              {isAnonymous ? "?" : username.charAt(0).toUpperCase()}
+    <div 
+      className={`
+        transform transition-all duration-600 ease-out
+        ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
+        ${isHighlighted ? 'scale-[1.01] ring-1 ring-white/20 shadow-xl shadow-white/5' : ''}
+      `}
+    >
+      <article className="group relative bg-gradient-to-br from-white/[0.03] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/[0.05] hover:border-white/[0.12] hover:bg-gradient-to-br hover:from-white/[0.05] hover:to-white/[0.02] transition-all duration-400 overflow-hidden shadow-lg shadow-black/10">
+        
+        <div className="relative p-6">
+          {/* Clean Header */}
+          <div className="flex items-center gap-4 mb-5">
+            {/* Refined Avatar */}
+            <div className="relative flex-shrink-0">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="avatar"
+                  className="w-12 h-12 rounded-xl object-cover border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.03] text-white flex items-center justify-center rounded-xl font-medium text-base border border-white/[0.08] group-hover:border-white/[0.15] transition-all duration-300 shadow-sm">
+                  {isAnonymous ? "?" : username.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* User info with cleaner layout */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <span className={`
+                  text-white/90 text-base font-medium tracking-wide truncate
+                  ${isAnonymous ? 'italic font-normal text-white/70' : ''}
+                `}>
+                  {username}
+                </span>
+                <span className="text-white/30 text-sm">•</span>
+                <span className="text-white/50 text-sm">{timestamp}</span>
+              </div>
+              
+              {/* Mood badge with better styling */}
+              <div className={`
+                inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm w-fit
+                ${getMoodColor(post.mood)}
+              `}>
+                <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
+                <span className="capitalize tracking-wide">{post.mood}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Content with improved readability */}
+          <div className="space-y-4">
+            <p className="text-white/85 text-base leading-relaxed whitespace-pre-wrap font-light tracking-wide">
+              {post.content}
+            </p>
+
+            {/* Image with cleaner presentation */}
+            {post.imageUrl && (
+              <div className="relative rounded-xl overflow-hidden border border-white/[0.06] group-hover:border-white/[0.12] transition-all duration-300 shadow-md">
+                <img
+                  src={post.imageUrl}
+                  alt="post visual"
+                  className="w-full max-h-80 object-cover transition-transform duration-400 group-hover:scale-[1.01]"
+                  loading="lazy"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Privacy indicator - minimal and clean */}
+          {post.privatePosts && (
+            <div className="flex items-center gap-2 text-amber-400/70 text-xs mt-4 px-3 py-1.5 bg-amber-400/5 rounded-full border border-amber-400/10 w-fit">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+              </svg>
+              <span>Private</span>
             </div>
           )}
-
-          {/* Username & Mood */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 text-white/90 text-sm">
-              <span className={isAnonymous ? "italic font-light text-white/60" : "font-medium"}>
-                {username}
-              </span>
-              <span className="text-white/40 text-xs">· {timestamp}</span>
-            </div>
-            <span className="text-[11px] text-white/40 uppercase tracking-wider">
-              {post.mood}
-            </span>
-          </div>
         </div>
-      </div>
-
-      {/* Content */}
-      <p className="text-white/90 text-[15px] whitespace-pre-wrap mb-3">{post.content}</p>
-
-      {/* Image */}
-      {post.imageUrl && (
-        <img
-          src={post.imageUrl}
-          alt="post visual"
-          className="rounded-lg max-h-64 object-cover w-full border border-white/10"
-        />
-      )}
-
-      {/* Meta */}
-      {post.privatePosts && (
-        <p className="text-xs mt-3 text-yellow-400 italic">Private Post</p>
-      )}
+      </article>
     </div>
   );
 };
