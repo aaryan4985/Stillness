@@ -28,7 +28,7 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
   };
 
   return (
-    <aside className="fixed right-0 top-0 h-full w-80 bg-black/95 backdrop-blur-xl border-l border-white/20 flex flex-col py-8 px-6 text-white select-none overflow-hidden">
+    <aside className="fixed right-0 top-0 h-screen w-80 bg-black/95 backdrop-blur-xl border-l border-white/20 flex flex-col py-6 px-6 text-white select-none overflow-hidden z-40">
       {/* Floating background orbs */}
       <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-white/8 to-white/3 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute top-1/4 -left-24 w-48 h-48 bg-gradient-to-tr from-white/5 to-white/2 rounded-full blur-3xl"></div>
@@ -48,9 +48,9 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
           </p>
         </div>
 
-        {/* Mood Grid */}
-        <div className="flex-1 flex flex-col justify-center">
-          <div className="grid grid-cols-2 gap-3 max-w-full">
+        {/* Mood Grid - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3 max-w-full pb-4">
             {MOOD_OPTIONS.map((mood, index) => (
               <button
                 key={mood}
@@ -80,7 +80,7 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 space-y-4">
+        <div className="text-center mt-6 space-y-4">
           {selectedMood && (
             <div className="animate-fade-in">
               <p className="text-sm font-light text-white/70 tracking-wide">

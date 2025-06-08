@@ -22,7 +22,9 @@ const SplitText = ({
   onLetterAnimationComplete,
 }) => {
   const ref = useRef(null);
-  const animatedRef = useRef(false); // ⚠️ animation state tracker
+  const animatedRef = useRef(false);
+  const timelineRef = useRef(null); // Store timeline reference
+  const splitterRef = useRef(null); // Store splitter reference
 
   useEffect(() => {
     const el = ref.current;
@@ -36,6 +38,8 @@ const SplitText = ({
       absolute: absoluteLines,
       linesClass: "split-line",
     });
+    
+    splitterRef.current = splitter;
 
     let targets;
     switch (splitType) {
@@ -71,10 +75,12 @@ const SplitText = ({
       },
       smoothChildTiming: true,
       onComplete: () => {
-        animatedRef.current = true; // ✅ Mark animation as done
+        animatedRef.current = true;
         onLetterAnimationComplete?.();
       },
     });
+
+    timelineRef.current = tl;
 
     tl.set(targets, { ...from, immediateRender: false, force3D: true });
     tl.to(targets, {
@@ -86,22 +92,18 @@ const SplitText = ({
     });
 
     return () => {
-      tl.kill();
+      if (timelineRef.current) {
+        timelineRef.current.kill();
+        timelineRef.current = null;
+      }
       ScrollTrigger.getAll().forEach((t) => t.kill());
       gsap.killTweensOf(targets);
-      splitter.revert();
+      if (splitterRef.current) {
+        splitterRef.current.revert();
+        splitterRef.current = null;
+      }
     };
-  }, [
-    delay,
-    duration,
-    ease,
-    splitType,
-    from,
-    to,
-    threshold,
-    rootMargin,
-    onLetterAnimationComplete,
-  ]);
+  }, [text]); // Only depend on text changes
 
   return (
     <p
