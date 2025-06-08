@@ -38,7 +38,7 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
       {/* Content */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h2 className="text-2xl font-extralight tracking-[0.4em] text-white/90 mb-3">
             CHOOSE MOOD
           </h2>
@@ -48,14 +48,14 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
           </p>
         </div>
 
-        {/* Mood Grid - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3 max-w-full pb-4">
+        {/* Mood Grid - No Scroll, Smaller Buttons */}
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="grid grid-cols-2 gap-2 max-w-full">
             {MOOD_OPTIONS.map((mood, index) => (
               <button
                 key={mood}
                 onClick={() => handleMoodClick(mood)}
-                className={`px-4 py-3 rounded-xl text-sm font-light border transition-all duration-500 transform hover:scale-105 hover:shadow-lg relative group
+                className={`px-3 py-2 rounded-lg text-xs font-light border transition-all duration-500 transform hover:scale-105 hover:shadow-lg relative group
                   ${index < visibleMoods 
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-4 pointer-events-none'
@@ -69,7 +69,7 @@ const MoodSelectorSidebar = ({ onMoodSelect }) => {
                 }}
               >
                 {/* Hover glow effect */}
-                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 -z-10"></div>
+                <div className="absolute inset-0 bg-white/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 -z-10"></div>
                 
                 <span className="relative z-10 tracking-wide">
                   {mood}
