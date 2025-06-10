@@ -1,12 +1,50 @@
-# React + Vite
+# 🌿 Stillness — The Anti-Social Social Network
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Stillness** is a minimalist platform for quiet self-expression. No likes, no comments, no followers — just your thoughts. Posts auto-delete after 24 hours, encouraging presence over permanence.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## Expanding the ESLint configuration
+- 🕊️ Anonymous or private text-based posts  
+- 🗑️ Auto-deletes posts after 24 hours (Firebase Cloud Function)  
+- 🎭 No social metrics — no likes, shares, or followers  
+- 🌱 Mood Garden (visual representation of thoughts — coming soon)  
+- 📱 Fully responsive and distraction-free UI  
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## ⚙️ Tech Stack
+
+- **Frontend:** React.js + Tailwind CSS  
+- **Backend:** Firebase (Firestore, Auth)  
+- **Scheduled Cleanup:** Firebase Cloud Functions  
+- **Deployment:** Vercel  
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/stillness.git
+   cd stillness
+   npm install
+   npm run dev
+   ```
+2.Set up Firebase project and add credentials:
+
+Create a .env.local file:
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+
+
+📖 Philosophy
+Stillness is not a social app.
+It’s a quiet space for digital solitude — no pressure to perform, no urge to compare.
+
+Made with peace ✨ by Aaryan Pradhan
